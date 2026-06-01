@@ -5,7 +5,7 @@ services:
     environment:
        POSTGRES_USER: sulwork
        POSTGRES_PASSWORD: sulwork
-       POSTGRES_DB: sulwork-cafe
+       POSTGRES_DB: sulwork_cafe
     ports:
       - "5432:5432"
     volumes:

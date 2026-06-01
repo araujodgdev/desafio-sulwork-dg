@@ -4,11 +4,11 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record ParticipationRegisterResponseDTO(
-		Long colaboratorId,
-		String colaboratorName,
+		Long collaboratorId,
+		String collaboratorName,
 		String cpf,
-		LocalDate coffeeDate,
-		List<ItemCoffeeResponseDTO> items
+		LocalDate breakfastDate,
+		List<ItemBreakfastResponseDTO> items
 		
 		) {
 
