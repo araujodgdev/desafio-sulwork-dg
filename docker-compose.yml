@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sulwork-cafe-db
+    environment:
+       POSTGRES_USER: sulwork
+       POSTGRES_PASSWORD: sulwork
+       POSTGRES_DB: sulwork-cafe
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
