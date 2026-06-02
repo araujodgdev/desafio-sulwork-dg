@@ -65,4 +65,36 @@ public class ParticipationRepository {
 		return result.longValue();
 	};
 	
+	public Long insertNewBreakfastItem(String itemName, LocalDate breakfastDate) {
+		String sql = """
+				INSERT INTO breakfast_items (item_name, breakfast_date)
+				VALUES (:name, :date)
+				RETURNING id
+				""";
+		
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("name", itemName);
+		query.setParameter("date", breakfastDate);
+		
+		Number result = (Number) query.getSingleResult()
+				;
+		return result.longValue();
+	};
+	
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
