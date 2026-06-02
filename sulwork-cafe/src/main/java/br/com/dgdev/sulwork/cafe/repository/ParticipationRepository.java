@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.stereotype.Repository;
 
+import br.com.dgdev.sulwork.cafe.enums.ItemStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
@@ -65,16 +66,18 @@ public class ParticipationRepository {
 		return result.longValue();
 	};
 	
-	public Long insertNewBreakfastItem(String itemName, LocalDate breakfastDate) {
+	public Long insertNewBreakfastItem(String itemName, LocalDate breakfastDate, Long collaboratorId, ItemStatus status) {
 		String sql = """
-				INSERT INTO breakfast_items (item_name, breakfast_date)
-				VALUES (:name, :date)
+				INSERT INTO breakfast_items (item_name, breakfast_date, collaborator_id, item_status)
+				VALUES (:name, :date, :collaborator, :status)
 				RETURNING id
 				""";
 		
 		Query query = entityManager.createNativeQuery(sql);
 		query.setParameter("name", itemName);
 		query.setParameter("date", breakfastDate);
+		query.setParameter("collaborator", collaboratorId);
+		query.setParameter("status", status.name());
 		
 		Number result = (Number) query.getSingleResult()
 				;
