@@ -15,9 +15,11 @@ import java.time.LocalTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -146,6 +148,81 @@ class SulworkCafeApplicationTests {
 			.andExpect(jsonPath("$.participations[0].items[0].status").value("NAO_TROUXE"));
 	}
 
+	@Test
+	void updatesBreakfast() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(40), "Fruta");
+		LocalDate newDate = LocalDate.now().plusDays(41);
+
+		mockMvc.perform(put("/breakfasts/" + data.breakfastId())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"breakfastDate": "%s",
+							"breakfastTime": "09:15",
+							"location": "Auditório"
+						}
+						""".formatted(newDate)))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.breakfastDate").value(newDate.toString()))
+			.andExpect(jsonPath("$.location").value("Auditório"));
+	}
+
+	@Test
+	void deletesBreakfast() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(42), "Tapioca");
+
+		mockMvc.perform(delete("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isNotFound());
+	}
+
+	@Test
+	void deletesParticipation() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(43), "Café");
+
+		mockMvc.perform(delete("/participations/" + data.participationId()))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.participations.length()").value(0));
+	}
+
+	@Test
+	void updatesItemName() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(44), "Mingau");
+
+		mockMvc.perform(put("/items/" + data.itemId())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"name": "Mingau de milho"
+						}
+						"""))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.participations[0].items[0].name").value("Mingau de milho"));
+	}
+
+	@Test
+	void deletesItem() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(45), "Banana");
+
+		mockMvc.perform(delete("/items/" + data.itemId()))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.participations[0].items.length()").value(0));
+	}
+
 	private TestItemData createItemData(LocalDate breakfastDate, String itemName) {
 		String suffix = String.valueOf(System.nanoTime());
 		jdbcTemplate.update(
@@ -178,10 +255,10 @@ class SulworkCafeApplicationTests {
 		);
 		Long itemId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM breakfast_items", Long.class);
 
-		return new TestItemData(breakfastId, itemId);
+		return new TestItemData(breakfastId, participationId, itemId);
 	}
 
-	private record TestItemData(Long breakfastId, Long itemId) {
+	private record TestItemData(Long breakfastId, Long participationId, Long itemId) {
 	}
 
 }

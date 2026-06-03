@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { finalize } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
 
 import { resolveHttpErrorMessage } from './api-error';
 import { BreakfastApiService } from './breakfast-api.service';
@@ -28,6 +28,8 @@ export class BreakfastListPage implements OnInit {
   readonly breakfasts = signal<Breakfast[]>([]);
   readonly isLoadingList = signal(true);
   readonly isSaving = signal(false);
+  readonly deletingBreakfastId = signal<number | null>(null);
+  readonly editingBreakfastId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly minBreakfastDate = getTomorrowDate();
@@ -76,17 +78,54 @@ export class BreakfastListPage implements OnInit {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
+    const editingId = this.editingBreakfastId();
+    const request$: Observable<number | void> = editingId
+      ? this.breakfastApi.updateBreakfast(editingId, payload)
+      : this.breakfastApi.createBreakfast(payload);
+
+    request$.pipe(finalize(() => this.isSaving.set(false))).subscribe({
+      next: (breakfastId) => {
+        this.successMessage.set(
+          editingId ? 'Café da manhã atualizado.' : `Café da manhã #${breakfastId} criado.`,
+        );
+        this.resetForm();
+        this.loadBreakfasts();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(resolveHttpErrorMessage(error));
+      },
+    });
+  }
+
+  startEditBreakfast(breakfast: Breakfast): void {
+    this.editingBreakfastId.set(breakfast.id);
+    this.successMessage.set(null);
+    this.errorMessage.set(null);
+    this.form.setValue({
+      breakfastDate: breakfast.breakfastDate,
+      breakfastTime: this.formatTimeForInput(breakfast.breakfastTime),
+      location: breakfast.location,
+    });
+  }
+
+  cancelEdit(): void {
+    this.resetForm();
+  }
+
+  deleteBreakfast(id: number): void {
+    this.deletingBreakfastId.set(id);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
     this.breakfastApi
-      .createBreakfast(payload)
-      .pipe(finalize(() => this.isSaving.set(false)))
+      .deleteBreakfast(id)
+      .pipe(finalize(() => this.deletingBreakfastId.set(null)))
       .subscribe({
-        next: (breakfastId) => {
-          this.successMessage.set(`Café da manhã #${breakfastId} criado.`);
-          this.form.reset({
-            breakfastDate: '',
-            breakfastTime: '08:30',
-            location: '',
-          });
+        next: () => {
+          this.successMessage.set('Café da manhã excluído.');
+          if (this.editingBreakfastId() === id) {
+            this.resetForm();
+          }
           this.loadBreakfasts();
         },
         error: (error: unknown) => {
@@ -134,5 +173,26 @@ export class BreakfastListPage implements OnInit {
 
   formatTime(value: string | null): string {
     return formatTime(value);
+  }
+
+  submitButtonLabel(): string {
+    if (this.isSaving()) {
+      return 'Salvando...';
+    }
+
+    return this.editingBreakfastId() ? 'Salvar alterações' : 'Criar café';
+  }
+
+  private resetForm(): void {
+    this.editingBreakfastId.set(null);
+    this.form.reset({
+      breakfastDate: '',
+      breakfastTime: '08:30',
+      location: '',
+    });
+  }
+
+  private formatTimeForInput(value: string | null): string {
+    return value ? value.slice(0, 5) : '08:30';
   }
 }

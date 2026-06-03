@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 
 import { resolveHttpErrorMessage } from './api-error';
@@ -26,12 +26,18 @@ export class BreakfastDetailPage implements OnInit {
   private readonly breakfastApi = inject(BreakfastApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   readonly breakfast = signal<Breakfast | null>(null);
   readonly selectedParticipationId = signal<number | null>(null);
   readonly isLoading = signal(true);
   readonly isSavingParticipation = signal(false);
   readonly isSavingItem = signal(false);
+  readonly isDeletingBreakfast = signal(false);
+  readonly deletingParticipationId = signal<number | null>(null);
+  readonly deletingItemId = signal<number | null>(null);
+  readonly editingItemId = signal<number | null>(null);
+  readonly isSavingItemEdit = signal(false);
   readonly updatingItemId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
@@ -42,6 +48,10 @@ export class BreakfastDetailPage implements OnInit {
   });
 
   readonly itemForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(120)]],
+  });
+
+  readonly itemEditForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(120)]],
   });
 
@@ -192,6 +202,108 @@ export class BreakfastDetailPage implements OnInit {
     this.errorMessage.set(null);
   }
 
+  deleteBreakfast(): void {
+    const breakfast = this.breakfast();
+
+    if (!breakfast) {
+      return;
+    }
+
+    this.isDeletingBreakfast.set(true);
+    this.clearMessages();
+
+    this.breakfastApi
+      .deleteBreakfast(breakfast.id)
+      .pipe(finalize(() => this.isDeletingBreakfast.set(false)))
+      .subscribe({
+        next: () => {
+          void this.router.navigate(['/']);
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  deleteParticipation(participationId: number): void {
+    this.deletingParticipationId.set(participationId);
+    this.clearMessages();
+
+    this.breakfastApi
+      .deleteParticipation(participationId)
+      .pipe(finalize(() => this.deletingParticipationId.set(null)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Participação excluída.');
+          if (this.selectedParticipationId() === participationId) {
+            this.selectedParticipationId.set(null);
+          }
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  startEditItem(itemId: number, name: string): void {
+    this.editingItemId.set(itemId);
+    this.itemEditForm.setValue({ name });
+    this.errorMessage.set(null);
+  }
+
+  cancelEditItem(): void {
+    this.editingItemId.set(null);
+    this.itemEditForm.reset({ name: '' });
+  }
+
+  updateItem(itemId: number): void {
+    if (this.itemEditForm.invalid) {
+      this.itemEditForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSavingItemEdit.set(true);
+    this.clearMessages();
+
+    this.breakfastApi
+      .updateItem(itemId, {
+        name: this.itemEditForm.controls.name.value.trim(),
+      })
+      .pipe(finalize(() => this.isSavingItemEdit.set(false)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Item atualizado.');
+          this.cancelEditItem();
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  deleteItem(itemId: number): void {
+    this.deletingItemId.set(itemId);
+    this.clearMessages();
+
+    this.breakfastApi
+      .deleteItem(itemId)
+      .pipe(finalize(() => this.deletingItemId.set(null)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Item excluído.');
+          if (this.editingItemId() === itemId) {
+            this.cancelEditItem();
+          }
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
   hasParticipationFieldError(controlName: 'name' | 'cpf'): boolean {
     const control = this.participationForm.controls[controlName];
     return control.invalid && (control.dirty || control.touched);
@@ -199,6 +311,11 @@ export class BreakfastDetailPage implements OnInit {
 
   hasItemFieldError(): boolean {
     const control = this.itemForm.controls.name;
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  hasItemEditFieldError(): boolean {
+    const control = this.itemEditForm.controls.name;
     return control.invalid && (control.dirty || control.touched);
   }
 

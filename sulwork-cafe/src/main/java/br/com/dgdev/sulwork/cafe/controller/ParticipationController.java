@@ -2,6 +2,7 @@ package br.com.dgdev.sulwork.cafe.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,5 +42,14 @@ public class ParticipationController {
     public ResponseEntity<Long> createItem(@Valid @RequestBody CreateItemRequestDTO request, @PathVariable Long participationId) {
         Long itemId = participationService.insertNewItem(request.name(), participationId);
         return ResponseEntity.status(HttpStatus.CREATED).body(itemId);
+    }
+
+    @DeleteMapping("/participations/{participationId}")
+    @Operation(summary = "Excluir uma participação")
+    @ApiResponse(responseCode = "204", description = "Participação excluída com sucesso")
+    @ApiResponse(responseCode = "404", description = "Participação não encontrada")
+    public ResponseEntity<Void> deleteParticipation(@PathVariable Long participationId) {
+        participationService.deleteParticipation(participationId);
+        return ResponseEntity.noContent().build();
     }
 }

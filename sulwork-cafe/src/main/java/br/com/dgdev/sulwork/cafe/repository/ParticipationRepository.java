@@ -48,6 +48,17 @@ public class ParticipationRepository {
 		return result.longValue();
 	}
 
+	public int deleteParticipation(Long participationId) {
+		String sql = """
+				DELETE FROM participations
+				WHERE id = :participationId
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("participationId", participationId);
+		return query.executeUpdate();
+	}
+
 	public Optional<ParticipationDTO> findParticipationByBreakfastIdAndCollaboratorId(Long breakfastId, Long collaboratorId) {
 		String sql = """
 				SELECT p.id, p.breakfast_id, p.collaborator_id, c.id, c.name, c.cpf

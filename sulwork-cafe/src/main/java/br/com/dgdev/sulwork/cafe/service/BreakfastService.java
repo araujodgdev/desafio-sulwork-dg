@@ -11,6 +11,7 @@ import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
 import br.com.dgdev.sulwork.cafe.exception.ResourceNotFoundException;
 import br.com.dgdev.sulwork.cafe.repository.BreakfastRepository;
 import br.com.dgdev.sulwork.cafe.repository.ParticipationRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class BreakfastService {
@@ -48,11 +49,34 @@ public class BreakfastService {
 			.orElseThrow(() -> new ResourceNotFoundException("Café da manhã não encontrado!"));
 	}
 
+	@Transactional
 	public Long insertNewBreakfast(LocalDate breakfastDate, LocalTime breakfastTime, String location) {
 		Optional<BreakfastDTO> existingBreakfast = breakfastRepository.findBreakfastByDate(breakfastDate);
 		if (existingBreakfast.isPresent()) {
 			throw new IllegalArgumentException("Café da manhã já existe para a data informada!");
 		}
 		return breakfastRepository.insertNewBreakfast(breakfastDate, breakfastTime, location.trim());
+	}
+
+	@Transactional
+	public void updateBreakfast(Long id, LocalDate breakfastDate, LocalTime breakfastTime, String location) {
+		if (breakfastRepository.findBreakfastRowById(id).isEmpty()) {
+			throw new ResourceNotFoundException("Café da manhã não encontrado!");
+		}
+
+		Optional<BreakfastDTO> existingBreakfast = breakfastRepository.findBreakfastByDateIgnoringId(breakfastDate, id);
+		if (existingBreakfast.isPresent()) {
+			throw new IllegalArgumentException("Café da manhã já existe para a data informada!");
+		}
+
+		breakfastRepository.updateBreakfast(id, breakfastDate, breakfastTime, location.trim());
+	}
+
+	@Transactional
+	public void deleteBreakfast(Long id) {
+		int rows = breakfastRepository.deleteBreakfast(id);
+		if (rows == 0) {
+			throw new ResourceNotFoundException("Café da manhã não encontrado!");
+		}
 	}
 }

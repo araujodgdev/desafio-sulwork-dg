@@ -120,7 +120,7 @@ h2 {
 
 .detail-summary {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.42fr) minmax(0, 1fr);
+  grid-template-columns: minmax(12rem, 0.38fr) minmax(0, 1fr) auto;
   gap: 1.5rem;
   align-items: end;
   padding: 1.25rem;
@@ -177,6 +177,11 @@ h2 {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+.summary-actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .section-heading {
@@ -255,6 +260,7 @@ input[aria-invalid='true'] {
 
 .form-actions {
   display: flex;
+  gap: 0.5rem;
   justify-content: flex-end;
   padding-top: 0.25rem;
 }
@@ -468,6 +474,8 @@ tbody tr:hover {
 }
 
 .participant-row {
+  display: flex;
+  align-items: center;
   width: 100%;
   min-height: 0;
   justify-content: space-between;
@@ -491,6 +499,24 @@ tbody tr:hover {
 }
 
 .participant-row span {
+  min-width: 0;
+}
+
+.participant-select {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+
+.participant-select span {
   display: grid;
   gap: 0.125rem;
   min-width: 0;
@@ -591,6 +617,13 @@ tbody tr:hover {
 .item-actions {
   display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.375rem;
 }
 
@@ -606,6 +639,21 @@ tbody tr:hover {
 .tiny-action:hover:not(:disabled) {
   color: var(--text-strong);
   border-color: var(--line-hover);
+}
+
+.danger-action {
+  color: var(--danger-text);
+}
+
+.danger-action:hover:not(:disabled) {
+  color: var(--danger-text);
+  border-color: var(--danger-line);
+}
+
+.inline-edit-form {
+  display: grid;
+  gap: 0.625rem;
+  width: 100%;
 }
 
 .muted-line {
@@ -660,6 +708,13 @@ tbody tr:hover {
   .detail-grid,
   .summary-strip {
     grid-template-columns: 1fr;
+  }
+
+  .item-row,
+  .item-actions,
+  .participant-select {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .item-row,

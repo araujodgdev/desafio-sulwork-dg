@@ -3,7 +3,13 @@
     <div class="section-heading">
       <div>
         <p class="section-kicker">Cadastro</p>
-        <h2 id="create-title">Novo café da manhã</h2>
+        <h2 id="create-title">
+          @if (editingBreakfastId()) {
+            Editar café da manhã
+          } @else {
+            Novo café da manhã
+          }
+        </h2>
       </div>
     </div>
 
@@ -56,12 +62,18 @@
       </div>
 
       <div class="form-actions">
+        @if (editingBreakfastId()) {
+          <button
+            class="secondary-action"
+            type="button"
+            (click)="cancelEdit()"
+            [disabled]="isSaving()"
+          >
+            Cancelar
+          </button>
+        }
         <button class="primary-action" type="submit" [disabled]="form.invalid || isSaving()">
-          @if (isSaving()) {
-            Salvando...
-          } @else {
-            Criar café
-          }
+          {{ submitButtonLabel() }}
         </button>
       </div>
     </form>
@@ -112,6 +124,7 @@
               <th scope="col">Horário</th>
               <th scope="col">Local</th>
               <th scope="col">Participantes</th>
+              <th scope="col">Ações</th>
             </tr>
           </thead>
           <tbody>
@@ -126,6 +139,25 @@
                 <td>{{ breakfast.location }}</td>
                 <td>
                   <span class="count-badge">{{ breakfast.participations?.length ?? 0 }}</span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    <button
+                      class="tiny-action"
+                      type="button"
+                      (click)="startEditBreakfast(breakfast)"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      class="tiny-action danger-action"
+                      type="button"
+                      (click)="deleteBreakfast(breakfast.id)"
+                      [disabled]="deletingBreakfastId() === breakfast.id"
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </td>
               </tr>
             }

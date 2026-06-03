@@ -28,6 +28,17 @@
           <strong>{{ participations().length }}</strong>
         </div>
       </div>
+
+      <div class="summary-actions">
+        <button
+          class="secondary-action danger-action"
+          type="button"
+          (click)="deleteBreakfast()"
+          [disabled]="isDeletingBreakfast()"
+        >
+          Excluir café
+        </button>
+      </div>
     </section>
 
     @if (errorMessage()) {
@@ -127,18 +138,31 @@
         } @else {
           <div class="participants-list">
             @for (participation of participations(); track participation.id) {
-              <button
+              <div
                 class="participant-row"
                 [class.participant-row--selected]="participation.id === selectedParticipationId()"
-                type="button"
-                (click)="selectParticipation(participation.id)"
               >
-                <span>
-                  <strong>{{ participation.collaborator.name }}</strong>
-                  <small>CPF {{ participation.collaborator.cpf }}</small>
-                </span>
-                <em>{{ participation.items.length }} itens</em>
-              </button>
+                <button
+                  class="participant-select"
+                  type="button"
+                  (click)="selectParticipation(participation.id)"
+                >
+                  <span>
+                    <strong>{{ participation.collaborator.name }}</strong>
+                    <small>CPF {{ participation.collaborator.cpf }}</small>
+                  </span>
+                  <em>{{ participation.items.length }} itens</em>
+                </button>
+
+                <button
+                  class="tiny-action danger-action"
+                  type="button"
+                  (click)="deleteParticipation(participation.id)"
+                  [disabled]="deletingParticipationId() === participation.id"
+                >
+                  Excluir
+                </button>
+              </div>
             }
           </div>
         }
@@ -203,33 +227,82 @@
             <ul class="item-list">
               @for (item of selectedParticipation.items; track item.id) {
                 <li class="item-row">
-                  <div>
-                    <strong>{{ item.name }}</strong>
-                    <span
-                      class="status-badge"
-                      [class]="'status-badge status-badge--' + item.status.toLowerCase()"
+                  @if (editingItemId() === item.id) {
+                    <form
+                      class="inline-edit-form"
+                      [formGroup]="itemEditForm"
+                      (ngSubmit)="updateItem(item.id)"
                     >
-                      {{ formatStatus(item.status) }}
-                    </span>
-                  </div>
+                      <div class="field">
+                        <label [for]="'edit-item-' + item.id">Item</label>
+                        <input
+                          [id]="'edit-item-' + item.id"
+                          type="text"
+                          formControlName="name"
+                          maxlength="120"
+                          [attr.aria-invalid]="hasItemEditFieldError()"
+                        />
+                        @if (hasItemEditFieldError()) {
+                          <p class="field-error">Informe o item do café.</p>
+                        }
+                      </div>
+                      <div class="item-actions">
+                        <button
+                          class="tiny-action"
+                          type="submit"
+                          [disabled]="itemEditForm.invalid || isSavingItemEdit()"
+                        >
+                          Salvar
+                        </button>
+                        <button class="tiny-action" type="button" (click)="cancelEditItem()">
+                          Cancelar
+                        </button>
+                      </div>
+                    </form>
+                  } @else {
+                    <div>
+                      <strong>{{ item.name }}</strong>
+                      <span
+                        class="status-badge"
+                        [class]="'status-badge status-badge--' + item.status.toLowerCase()"
+                      >
+                        {{ formatStatus(item.status) }}
+                      </span>
+                    </div>
 
-                  @if (breakfastStatusMode() === 'today') {
-                    <div class="item-actions" aria-label="Atualizar status do item">
+                    <div class="item-actions" aria-label="Ações do item">
+                      @if (breakfastStatusMode() === 'today') {
+                        <button
+                          class="tiny-action"
+                          type="button"
+                          (click)="updateItemStatus(item.id, 'TROUXE')"
+                          [disabled]="updatingItemId() === item.id"
+                        >
+                          Trouxe
+                        </button>
+                        <button
+                          class="tiny-action"
+                          type="button"
+                          (click)="updateItemStatus(item.id, 'NAO_TROUXE')"
+                          [disabled]="updatingItemId() === item.id"
+                        >
+                          Não trouxe
+                        </button>
+                      }
                       <button
                         class="tiny-action"
                         type="button"
-                        (click)="updateItemStatus(item.id, 'TROUXE')"
-                        [disabled]="updatingItemId() === item.id"
+                        (click)="startEditItem(item.id, item.name)"
                       >
-                        Trouxe
+                        Editar
                       </button>
                       <button
-                        class="tiny-action"
+                        class="tiny-action danger-action"
                         type="button"
-                        (click)="updateItemStatus(item.id, 'NAO_TROUXE')"
-                        [disabled]="updatingItemId() === item.id"
+                        (click)="deleteItem(item.id)"
+                        [disabled]="deletingItemId() === item.id"
                       >
-                        Não trouxe
+                        Excluir
                       </button>
                     </div>
                   }

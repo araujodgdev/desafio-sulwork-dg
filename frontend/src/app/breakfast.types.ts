@@ -13,6 +13,8 @@ export interface CreateBreakfastRequest {
   location: string;
 }
 
+export type UpdateBreakfastRequest = CreateBreakfastRequest;
+
 export interface Collaborator {
   id: number;
   name: string;
@@ -44,6 +46,8 @@ export interface CreateParticipationRequest {
 export interface CreateItemRequest {
   name: string;
 }
+
+export type UpdateItemRequest = CreateItemRequest;
 
 export type ItemStatus = 'PENDENTE' | 'TROUXE' | 'NAO_TROUXE';
 

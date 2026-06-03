@@ -85,6 +85,67 @@ describe('BreakfastListPage', () => {
     expect(compiled.textContent).toContain('Sala de reunião');
   });
 
+  it('should update a breakfast and reload the list', () => {
+    const fixture = createListComponentWithBreakfasts([breakfastFixture]);
+    const page = fixture.componentInstance;
+
+    page.startEditBreakfast(breakfastFixture);
+    page.form.setValue({
+      breakfastDate: '2099-06-11',
+      breakfastTime: '09:15',
+      location: 'Auditório',
+    });
+
+    page.submit();
+
+    const updateRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({
+      breakfastDate: '2099-06-11',
+      breakfastTime: '09:15',
+      location: 'Auditório',
+    });
+    updateRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush([
+      {
+        ...breakfastFixture,
+        breakfastDate: '2099-06-11',
+        breakfastTime: '09:15',
+        location: 'Auditório',
+      },
+    ]);
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Café da manhã atualizado.');
+    expect(compiled.textContent).toContain('Auditório');
+  });
+
+  it('should delete a breakfast and reload the list', () => {
+    const fixture = createListComponentWithBreakfasts([breakfastFixture]);
+    const page = fixture.componentInstance;
+
+    page.deleteBreakfast(42);
+
+    const deleteRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush([]);
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Café da manhã excluído.');
+    expect(compiled.textContent).toContain('Nenhum café cadastrado.');
+  });
+
   function createListComponentWithBreakfasts(
     breakfasts: Breakfast[],
   ): ComponentFixture<BreakfastListPage> {
@@ -333,6 +394,79 @@ describe('BreakfastDetailPage', () => {
     expect(compiled.textContent).toContain('Trouxe');
   });
 
+  it('should delete a participation and reload details', () => {
+    const fixture = createDetailComponentWithBreakfast(breakfastWithItem());
+    const page = fixture.componentInstance;
+
+    page.deleteParticipation(7);
+
+    const deleteRequest = httpMock.expectOne(`${apiBaseUrl}/participations/7`);
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush({
+      ...breakfastFixture,
+      participations: [],
+    });
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Participação excluída.');
+    expect(compiled.textContent).toContain('Nenhum participante cadastrado.');
+  });
+
+  it('should update an item and reload details', () => {
+    const fixture = createDetailComponentWithBreakfast(breakfastWithItem());
+    const page = fixture.componentInstance;
+
+    page.startEditItem(99, 'Queijo');
+    page.itemEditForm.setValue({ name: 'Queijo coalho' });
+    page.updateItem(99);
+
+    const updateRequest = httpMock.expectOne(`${apiBaseUrl}/items/99`);
+    expect(updateRequest.request.method).toBe('PUT');
+    expect(updateRequest.request.body).toEqual({ name: 'Queijo coalho' });
+    updateRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush(
+      breakfastWithItem({
+        name: 'Queijo coalho',
+      }),
+    );
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Item atualizado.');
+    expect(compiled.textContent).toContain('Queijo coalho');
+  });
+
+  it('should delete an item and reload details', () => {
+    const fixture = createDetailComponentWithBreakfast(breakfastWithItem());
+    const page = fixture.componentInstance;
+
+    page.deleteItem(99);
+
+    const deleteRequest = httpMock.expectOne(`${apiBaseUrl}/items/99`);
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush(breakfastWithItem({ includeItem: false }));
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Item excluído.');
+    expect(compiled.textContent).toContain('Nenhum item cadastrado para esta participação.');
+  });
+
   function createDetailComponentWithBreakfast(
     breakfast: Breakfast,
   ): ComponentFixture<BreakfastDetailPage> {
@@ -354,5 +488,36 @@ describe('BreakfastDetailPage', () => {
     const day = String(today.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
+  }
+
+  function breakfastWithItem(options: { name?: string; includeItem?: boolean } = {}): Breakfast {
+    const includeItem = options.includeItem ?? true;
+
+    return {
+      ...breakfastFixture,
+      participations: [
+        {
+          id: 7,
+          breakfastId: 42,
+          collaboratorId: 3,
+          collaborator: {
+            id: 3,
+            name: 'João',
+            cpf: '73244216013',
+          },
+          items: includeItem
+            ? [
+                {
+                  id: 99,
+                  breakfastId: 42,
+                  participationId: 7,
+                  name: options.name ?? 'Queijo',
+                  status: 'PENDENTE',
+                },
+              ]
+            : [],
+        },
+      ],
+    };
   }
 });

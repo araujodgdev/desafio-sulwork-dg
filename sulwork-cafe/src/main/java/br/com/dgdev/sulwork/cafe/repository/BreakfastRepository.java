@@ -41,6 +41,24 @@ public class BreakfastRepository {
 			.map(row -> mapToBreakfastDTO(row, List.of()));
 	}
 
+	public Optional<BreakfastDTO> findBreakfastByDateIgnoringId(LocalDate breakfastDate, Long ignoredId) {
+		String sql = """
+				SELECT id, breakfast_date, breakfast_time, location, created_at
+				FROM breakfasts
+				WHERE breakfast_date = :breakfastDate
+				  AND id <> :ignoredId
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("breakfastDate", breakfastDate);
+		query.setParameter("ignoredId", ignoredId);
+		@SuppressWarnings("unchecked")
+		List<Object[]> results = query.getResultList();
+		return results.stream()
+			.findFirst()
+			.map(row -> mapToBreakfastDTO(row, List.of()));
+	}
+
 	public List<Object[]> findAllBreakfastRows() {
 		String sql = """
 				SELECT id, breakfast_date, breakfast_time, location, created_at
@@ -83,6 +101,34 @@ public class BreakfastRepository {
 		Number result = (Number) query.getSingleResult();
 
 		return result.longValue();
+	}
+
+	public int updateBreakfast(Long id, LocalDate breakfastDate, LocalTime breakfastTime, String location) {
+		String sql = """
+				UPDATE breakfasts
+				SET breakfast_date = :breakfastDate,
+				    breakfast_time = :breakfastTime,
+				    location = :location
+				WHERE id = :id
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("id", id);
+		query.setParameter("breakfastDate", breakfastDate);
+		query.setParameter("breakfastTime", breakfastTime);
+		query.setParameter("location", location);
+		return query.executeUpdate();
+	}
+
+	public int deleteBreakfast(Long id) {
+		String sql = """
+				DELETE FROM breakfasts
+				WHERE id = :id
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("id", id);
+		return query.executeUpdate();
 	}
 
 	public BreakfastDTO mapToBreakfastDTO(Object[] row, List<ParticipationDTO> participations) {

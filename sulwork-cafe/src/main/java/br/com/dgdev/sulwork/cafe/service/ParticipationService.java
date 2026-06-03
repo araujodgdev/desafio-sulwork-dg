@@ -54,4 +54,12 @@ public class ParticipationService {
 	public Optional<ParticipationDTO> findParticipationByBreakfastIdAndCollaboratorId(Long breakfastId, Long collaboratorId) {
 		return participationRepository.findParticipationByBreakfastIdAndCollaboratorId(breakfastId, collaboratorId);
 	}
+
+	@Transactional
+	public void deleteParticipation(Long participationId) {
+		int rows = participationRepository.deleteParticipation(participationId);
+		if (rows == 0) {
+			throw new ResourceNotFoundException("Participação não encontrada!");
+		}
+	}
 }

@@ -130,6 +130,30 @@ public class ItemsRepository {
         query.executeUpdate();
     }
 
+    public int updateItemName(Long itemId, String name) {
+        String sql = """
+            UPDATE breakfast_items
+            SET item_name = :name
+            WHERE id = :itemId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("itemId", itemId);
+        query.setParameter("name", normalizeItemName(name));
+        return query.executeUpdate();
+    }
+
+    public int deleteItem(Long itemId) {
+        String sql = """
+            DELETE FROM breakfast_items
+            WHERE id = :itemId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("itemId", itemId);
+        return query.executeUpdate();
+    }
+
     public int updatePendingItemsFromPastBreakfasts(LocalDate today) {
         String sql = """
             UPDATE breakfast_items

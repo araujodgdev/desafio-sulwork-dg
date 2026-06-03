@@ -8,6 +8,8 @@ import {
   CreateItemRequest,
   CreateParticipationRequest,
   ItemStatus,
+  UpdateBreakfastRequest,
+  UpdateItemRequest,
 } from './breakfast.types';
 
 @Injectable({
@@ -29,8 +31,20 @@ export class BreakfastApiService {
     return this.http.post<number>(`${this.baseUrl}/breakfasts`, payload);
   }
 
+  updateBreakfast(id: number, payload: UpdateBreakfastRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/breakfasts/${id}`, payload);
+  }
+
+  deleteBreakfast(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/breakfasts/${id}`);
+  }
+
   createParticipation(payload: CreateParticipationRequest): Observable<number> {
     return this.http.post<number>(`${this.baseUrl}/participations`, payload);
+  }
+
+  deleteParticipation(participationId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/participations/${participationId}`);
   }
 
   createItem(participationId: number, payload: CreateItemRequest): Observable<number> {
@@ -44,5 +58,13 @@ export class BreakfastApiService {
     return this.http.patch<void>(`${this.baseUrl}/items/${itemId}/status`, {
       status,
     });
+  }
+
+  updateItem(itemId: number, payload: UpdateItemRequest): Observable<void> {
+    return this.http.put<void>(`${this.baseUrl}/items/${itemId}`, payload);
+  }
+
+  deleteItem(itemId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/items/${itemId}`);
   }
 }

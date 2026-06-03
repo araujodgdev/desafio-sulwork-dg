@@ -7,10 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
 import br.com.dgdev.sulwork.cafe.dto.CreateBreakfastRequestDTO;
+import br.com.dgdev.sulwork.cafe.dto.UpdateBreakfastRequestDTO;
 import br.com.dgdev.sulwork.cafe.service.BreakfastService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -52,5 +55,24 @@ public class BreakfastController {
     public ResponseEntity<Long> createBreakfast(@Valid @RequestBody CreateBreakfastRequestDTO request) {
         Long breakfastId = breakfastService.insertNewBreakfast(request.breakfastDate(), request.breakfastTime(), request.location());
         return ResponseEntity.status(HttpStatus.CREATED).body(breakfastId);
+    }
+
+    @PutMapping("/breakfasts/{id}")
+    @Operation(summary = "Atualizar um café da manhã")
+    @ApiResponse(responseCode = "204", description = "Café da manhã atualizado com sucesso")
+    @ApiResponse(responseCode = "400", description = "Dados inválidos para atualização do café da manhã")
+    @ApiResponse(responseCode = "404", description = "Café da manhã não encontrado")
+    public ResponseEntity<Void> updateBreakfast(@PathVariable Long id, @Valid @RequestBody UpdateBreakfastRequestDTO request) {
+        breakfastService.updateBreakfast(id, request.breakfastDate(), request.breakfastTime(), request.location());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/breakfasts/{id}")
+    @Operation(summary = "Excluir um café da manhã")
+    @ApiResponse(responseCode = "204", description = "Café da manhã excluído com sucesso")
+    @ApiResponse(responseCode = "404", description = "Café da manhã não encontrado")
+    public ResponseEntity<Void> deleteBreakfast(@PathVariable Long id) {
+        breakfastService.deleteBreakfast(id);
+        return ResponseEntity.noContent().build();
     }
 }

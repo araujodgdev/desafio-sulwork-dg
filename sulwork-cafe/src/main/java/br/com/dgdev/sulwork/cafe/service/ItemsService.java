@@ -58,4 +58,25 @@ public class ItemsService {
 
         itemsRepository.updateItemStatus(item.id(), status);
     }
+
+    @Transactional
+    public void updateItem(Long itemId, String name) {
+        ItemDTO item = itemsRepository.findItemById(itemId)
+            .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado!"));
+
+        Optional<ItemDTO> existingItem = itemsRepository.findItemByItemNameAndBreakfastId(name, item.breakfastId());
+        if (existingItem.isPresent() && !existingItem.get().id().equals(itemId)) {
+            throw new IllegalArgumentException("Item já cadastrado!");
+        }
+
+        itemsRepository.updateItemName(itemId, name);
+    }
+
+    @Transactional
+    public void deleteItem(Long itemId) {
+        int rows = itemsRepository.deleteItem(itemId);
+        if (rows == 0) {
+            throw new ResourceNotFoundException("Item não encontrado!");
+        }
+    }
 }
