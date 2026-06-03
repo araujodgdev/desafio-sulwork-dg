@@ -137,6 +137,15 @@ class SulworkCafeApplicationTests {
 			.andExpect(jsonPath("$.message").value("Status deve ser TROUXE ou NAO_TROUXE."));
 	}
 
+	@Test
+	void expiresPendingItemsFromPastBreakfastsWhenReadingBreakfast() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().minusDays(1), "Pão");
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.participations[0].items[0].status").value("NAO_TROUXE"));
+	}
+
 	private TestItemData createItemData(LocalDate breakfastDate, String itemName) {
 		String suffix = String.valueOf(System.nanoTime());
 		jdbcTemplate.update(

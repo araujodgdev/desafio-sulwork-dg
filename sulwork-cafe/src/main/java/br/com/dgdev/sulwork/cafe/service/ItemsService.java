@@ -36,6 +36,11 @@ public class ItemsService {
     }
 
     @Transactional
+    public void expirePendingItemsFromPastBreakfasts() {
+        itemsRepository.updatePendingItemsFromPastBreakfasts(LocalDate.now());
+    }
+
+    @Transactional
     public void updateItemStatus(Long itemId, ItemStatus status) {
         if (status == ItemStatus.PENDENTE) {
             throw new IllegalArgumentException("Status deve ser TROUXE ou NAO_TROUXE.");

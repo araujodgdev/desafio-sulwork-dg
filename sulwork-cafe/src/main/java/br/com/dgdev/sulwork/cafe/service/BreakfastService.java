@@ -17,15 +17,20 @@ public class BreakfastService {
 
 	private final BreakfastRepository breakfastRepository;
 	private final ParticipationRepository participationRepository;
+	private final ItemsService itemsService;
 
 	public BreakfastService(
 			BreakfastRepository breakfastRepository,
-			ParticipationRepository participationRepository) {
+			ParticipationRepository participationRepository,
+			ItemsService itemsService) {
 		this.breakfastRepository = breakfastRepository;
 		this.participationRepository = participationRepository;
+		this.itemsService = itemsService;
 	}
 
 	public List<BreakfastDTO> findAllBreakfasts() {
+		itemsService.expirePendingItemsFromPastBreakfasts();
+
 		return breakfastRepository.findAllBreakfastRows().stream()
 			.map(row -> {
 				Long breakfastId = ((Number) row[0]).longValue();
@@ -36,6 +41,8 @@ public class BreakfastService {
 	}
 
 	public BreakfastDTO findBreakfastById(Long id) {
+		itemsService.expirePendingItemsFromPastBreakfasts();
+
 		var participations = participationRepository.findParticipationsByBreakfastId(id);
 		return breakfastRepository.findBreakfastById(id, participations)
 			.orElseThrow(() -> new ResourceNotFoundException("Café da manhã não encontrado!"));

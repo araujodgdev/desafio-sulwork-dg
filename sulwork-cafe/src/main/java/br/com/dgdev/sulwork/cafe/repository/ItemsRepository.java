@@ -130,6 +130,25 @@ public class ItemsRepository {
         query.executeUpdate();
     }
 
+    public int updatePendingItemsFromPastBreakfasts(LocalDate today) {
+        String sql = """
+            UPDATE breakfast_items
+            SET item_status = :status
+            WHERE item_status = :pendingStatus
+              AND breakfast_id IN (
+                SELECT id
+                FROM breakfasts
+                WHERE breakfast_date < :today
+              )
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("status", ItemStatus.NAO_TROUXE.name());
+        query.setParameter("pendingStatus", ItemStatus.PENDENTE.name());
+        query.setParameter("today", today);
+        return query.executeUpdate();
+    }
+
     private static String normalizeItemName(String itemName) {
         return itemName.trim();
     }
