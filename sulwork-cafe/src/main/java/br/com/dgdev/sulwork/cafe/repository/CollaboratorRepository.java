@@ -16,6 +16,14 @@ public class CollaboratorRepository {
     @PersistenceContext
     private EntityManager entityManager;
 
+    public Long findOrCreateCollaborator(String name, String cpf) {
+        Optional<CollaboratorDTO> existingCollaborator = findCollaboratorByCpf(cpf);
+        if (existingCollaborator.isPresent()) {
+            return existingCollaborator.get().id();
+        }
+        return insertNewCollaborator(name, cpf);
+    }
+
     public Long insertNewCollaborator(String name, String cpf) {
         String sql = """
             INSERT INTO collaborators (name, cpf)

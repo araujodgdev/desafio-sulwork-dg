@@ -9,30 +9,42 @@ import org.springframework.stereotype.Service;
 
 import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
 import br.com.dgdev.sulwork.cafe.repository.BreakfastRepository;
+import br.com.dgdev.sulwork.cafe.repository.ParticipationRepository;
 
 @Service
 public class BreakfastService {
-    
-    private final BreakfastRepository breakfastRepository;
 
-    public BreakfastService(BreakfastRepository breakfastRepository) {
-        this.breakfastRepository = breakfastRepository;
-    }
+	private final BreakfastRepository breakfastRepository;
+	private final ParticipationRepository participationRepository;
 
-    public List<BreakfastDTO> findAllBreakfasts() {
-        return breakfastRepository.findAllBreakfasts();
-    }
+	public BreakfastService(
+			BreakfastRepository breakfastRepository,
+			ParticipationRepository participationRepository) {
+		this.breakfastRepository = breakfastRepository;
+		this.participationRepository = participationRepository;
+	}
 
-    public BreakfastDTO findBreakfastById(Long id) {
-        return breakfastRepository.findBreakfastById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Café da manhã não encontrado!"));
-    }
+	public List<BreakfastDTO> findAllBreakfasts() {
+		return breakfastRepository.findAllBreakfastRows().stream()
+			.map(row -> {
+				Long breakfastId = ((Number) row[0]).longValue();
+				var participations = participationRepository.findParticipationsByBreakfastId(breakfastId);
+				return breakfastRepository.mapToBreakfastDTO(row, participations);
+			})
+			.toList();
+	}
 
-    public Long insertNewBreakfast(LocalDate breakfastDate, LocalTime breakfastTime, String location) {
-        Optional<BreakfastDTO> existingBreakfast = breakfastRepository.findBreakfastByDate(breakfastDate);
-        if (existingBreakfast.isPresent()) {
-            throw new IllegalArgumentException("Café da manhã já existe para a data informada!");
-        }
-        return breakfastRepository.insertNewBreakfast(breakfastDate, breakfastTime, location);
-    }
+	public BreakfastDTO findBreakfastById(Long id) {
+		var participations = participationRepository.findParticipationsByBreakfastId(id);
+		return breakfastRepository.findBreakfastById(id, participations)
+			.orElseThrow(() -> new IllegalArgumentException("Café da manhã não encontrado!"));
+	}
+
+	public Long insertNewBreakfast(LocalDate breakfastDate, LocalTime breakfastTime, String location) {
+		Optional<BreakfastDTO> existingBreakfast = breakfastRepository.findBreakfastByDate(breakfastDate);
+		if (existingBreakfast.isPresent()) {
+			throw new IllegalArgumentException("Café da manhã já existe para a data informada!");
+		}
+		return breakfastRepository.insertNewBreakfast(breakfastDate, breakfastTime, location);
+	}
 }

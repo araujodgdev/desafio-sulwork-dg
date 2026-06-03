@@ -36,12 +36,15 @@ public class ItemsRepository {
 
     public Optional<ItemDTO> findItemByName(String name) {
         String sql = """
-            SELECT * FROM breakfast_items WHERE item_name = :name
+            SELECT id, breakfast_id, participation_id, item_name
+            FROM breakfast_items
+            WHERE item_name = :name
         """;
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("name", name);
 
+        @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
         return results.stream()
             .findFirst()
@@ -74,37 +77,63 @@ public class ItemsRepository {
         return result.intValue() > 0;
     }
 
-    public Optional<ItemDTO> findItemByItemName(String itemName) {
+    public Optional<ItemDTO> findItemByItemNameAndBreakfastId(String itemName, Long breakfastId) {
         String sql = """
-            SELECT * FROM breakfast_items WHERE item_name = :itemName
+            SELECT id, breakfast_id, participation_id, item_name
+            FROM breakfast_items
+            WHERE item_name = :itemName AND breakfast_id = :breakfastId
         """;
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("itemName", itemName);
+        query.setParameter("breakfastId", breakfastId);
 
+        @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
         return results.stream()
             .findFirst()
             .map(this::mapToItemDTO);
     }
 
-    private ItemDTO mapToItemDTO(Object[] result) {
+    private ItemDTO mapToItemDTO(Object[] row) {
         return new ItemDTO(
-            (Long) result[0],
-            (Long) result[1],
-            (Long) result[2],
-            (String) result[3]
+            ((Number) row[0]).longValue(),
+            ((Number) row[1]).longValue(),
+            ((Number) row[2]).longValue(),
+            (String) row[3]
         );
     }
 
     public List<ItemDTO> findItemsByParticipationId(Long participationId) {
         String sql = """
-            SELECT * FROM breakfast_items WHERE participation_id = :participationId
+            SELECT id, breakfast_id, participation_id, item_name
+            FROM breakfast_items
+            WHERE participation_id = :participationId
+            ORDER BY id
         """;
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("participationId", participationId);
 
+        @SuppressWarnings("unchecked")
+        List<Object[]> results = query.getResultList();
+        return results.stream()
+            .map(this::mapToItemDTO)
+            .collect(Collectors.toUnmodifiableList());
+    }
+
+    public List<ItemDTO> findItemsByBreakfastId(Long breakfastId) {
+        String sql = """
+            SELECT id, breakfast_id, participation_id, item_name
+            FROM breakfast_items
+            WHERE breakfast_id = :breakfastId
+            ORDER BY participation_id, id
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("breakfastId", breakfastId);
+
+        @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
         return results.stream()
             .map(this::mapToItemDTO)

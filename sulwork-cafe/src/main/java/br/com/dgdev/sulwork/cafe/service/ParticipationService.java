@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import br.com.dgdev.sulwork.cafe.dto.ItemDTO;
 import br.com.dgdev.sulwork.cafe.dto.ParticipationDTO;
 import br.com.dgdev.sulwork.cafe.repository.ParticipationRepository;
 import jakarta.transaction.Transactional;
@@ -24,7 +25,7 @@ public class ParticipationService {
 	@Transactional
 	public Long insertNewParticipation(Long breakfastId, String name, String cpf) {
 
-		Long collaboratorId = collaboratorService.insertNewCollaborator(name, cpf);
+		Long collaboratorId = collaboratorService.findOrCreateCollaborator(name, cpf);
 
 		Optional<ParticipationDTO> existingParticipation = participationRepository.findParticipationByBreakfastIdAndCollaboratorId(breakfastId, collaboratorId);
 		if (existingParticipation.isPresent()) {
@@ -37,8 +38,12 @@ public class ParticipationService {
 		return participationId;
 	}
 
-	public void insertNewItem(String itemName, Long breakfastId, Long participationId) {
-		itemsService.insertNewItem(itemName, breakfastId, participationId);
+	public Long insertNewItem(String itemName, Long participationId) {
+		Optional<ItemDTO> existingItem = itemsService.findItemByItemNameAndBreakfastId(itemName, participationRepository.findParticipationByParticipationId(participationId).get().breakfastId());
+		if (existingItem.isPresent()) {
+			throw new IllegalArgumentException("Item já cadastrado!");
+		}
+		return itemsService.insertNewItem(itemName, participationRepository.findParticipationByParticipationId(participationId).get().breakfastId(), participationId);
 	}
 
 	public Optional<ParticipationDTO> findParticipationByBreakfastIdAndCollaboratorId(Long breakfastId, Long collaboratorId) {

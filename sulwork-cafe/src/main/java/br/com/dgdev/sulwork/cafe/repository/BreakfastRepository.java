@@ -5,61 +5,68 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
 import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
+import br.com.dgdev.sulwork.cafe.dto.ParticipationDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 
 @Repository
 public class BreakfastRepository {
-	
+
 	@PersistenceContext
 	private EntityManager entityManager;
-	
-	public Optional<BreakfastDTO> findBreakfastById(Long id) {
-		String sql = """
-				SELECT * FROM breakfasts WHERE id = :id
-				""";
-				
-		Query query = entityManager.createNativeQuery(sql);
-		query.setParameter("id", id);
-		
-		List<Object[]> results = query.getResultList();
-		
-		return results.stream()
-            .findFirst()
-			.map(this::mapToBreakfastDTO);
+
+	public Optional<BreakfastDTO> findBreakfastById(Long id, List<ParticipationDTO> participations) {
+		return findBreakfastRowById(id)
+			.map(row -> mapToBreakfastDTO(row, participations));
 	}
 
-    public Optional<BreakfastDTO> findBreakfastByDate(LocalDate breakfastDate) {
-        String sql = """
-                SELECT * FROM breakfasts WHERE breakfast_date = :breakfastDate
-                """;
-                
-                Query query = entityManager.createNativeQuery(sql);
-                query.setParameter("breakfastDate", breakfastDate);
-                List<Object[]> results = query.getResultList();
-                return results.stream()
-                    .findFirst()
-                    .map(this::mapToBreakfastDTO);
-    }
+	public Optional<BreakfastDTO> findBreakfastByDate(LocalDate breakfastDate) {
+		String sql = """
+				SELECT id, breakfast_date, breakfast_time, location, created_at
+				FROM breakfasts
+				WHERE breakfast_date = :breakfastDate
+				""";
 
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("breakfastDate", breakfastDate);
+		@SuppressWarnings("unchecked")
+		List<Object[]> results = query.getResultList();
+		return results.stream()
+			.findFirst()
+			.map(row -> mapToBreakfastDTO(row, List.of()));
+	}
 
-    public List<BreakfastDTO> findAllBreakfasts() {
-        String sql = """
-                SELECT * FROM breakfasts
-                """;
-                
-                Query query = entityManager.createNativeQuery(sql);
-                List<Object[]> results = query.getResultList();
-                return results.stream()
-                    .map(this::mapToBreakfastDTO)
-                    .collect(Collectors.toUnmodifiableList());
-    }
+	public List<Object[]> findAllBreakfastRows() {
+		String sql = """
+				SELECT id, breakfast_date, breakfast_time, location, created_at
+				FROM breakfasts
+				ORDER BY breakfast_date DESC
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		@SuppressWarnings("unchecked")
+		List<Object[]> results = query.getResultList();
+		return results;
+	}
+
+	public Optional<Object[]> findBreakfastRowById(Long id) {
+		String sql = """
+				SELECT id, breakfast_date, breakfast_time, location, created_at
+				FROM breakfasts
+				WHERE id = :id
+				""";
+
+		Query query = entityManager.createNativeQuery(sql);
+		query.setParameter("id", id);
+		@SuppressWarnings("unchecked")
+		List<Object[]> results = query.getResultList();
+		return results.stream().findFirst();
+	}
 
 	public Long insertNewBreakfast(LocalDate breakfastDate, LocalTime breakfastTime, String location) {
 		String sql = """
@@ -67,26 +74,25 @@ public class BreakfastRepository {
 				VALUES (:breakfastDate, :breakfastTime, :location)
 				RETURNING id
 				""";
-				
-				
+
 		Query query = entityManager.createNativeQuery(sql);
 		query.setParameter("breakfastDate", breakfastDate);
 		query.setParameter("breakfastTime", breakfastTime);
 		query.setParameter("location", location);
-		
+
 		Number result = (Number) query.getSingleResult();
-		
+
 		return result.longValue();
 	}
 
-
-	private BreakfastDTO mapToBreakfastDTO(Object[] result) {
+	public BreakfastDTO mapToBreakfastDTO(Object[] row, List<ParticipationDTO> participations) {
 		return new BreakfastDTO(
-			(Long) result[0],
-			(LocalDate) result[1],
-			(LocalTime) result[2],
-			(String) result[3],
-			(LocalDateTime) result[4]
+			((Number) row[0]).longValue(),
+			(LocalDate) row[1],
+			(LocalTime) row[2],
+			(String) row[3],
+			(LocalDateTime) row[4],
+			participations
 		);
 	}
 }

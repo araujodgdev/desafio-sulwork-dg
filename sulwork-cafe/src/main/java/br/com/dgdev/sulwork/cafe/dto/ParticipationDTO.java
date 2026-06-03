@@ -6,7 +6,8 @@ public record ParticipationDTO(
     Long id,
     Long breakfastId,
     Long collaboratorId,
-    CollaboratorDTO collaborator
+    CollaboratorDTO collaborator,
+    List<ItemDTO> items
 ) {
     
 }

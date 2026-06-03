@@ -20,11 +20,7 @@ public class CollaboratorService {
         return collaboratorRepository.findCollaboratorByCpf(cpf);
     }
 
-    public Long insertNewCollaborator(String name, String cpf) {
-        Optional<CollaboratorDTO> existingCollaborator = collaboratorRepository.findCollaboratorByCpf(cpf);
-        if (existingCollaborator.isPresent()) {
-            throw new IllegalArgumentException("Colaborador já cadastrado!");
-        }
-        return collaboratorRepository.insertNewCollaborator(name, cpf);
+    public Long findOrCreateCollaborator(String name, String cpf) {
+        return collaboratorRepository.findOrCreateCollaborator(name, cpf);
     }
 }

@@ -29,7 +29,7 @@ public class ItemsService {
         return itemsRepository.insertNewItem(name, breakfastId, participationId);
     }
 
-    public Optional<ItemDTO> findItemByItemName(String itemName) {
-        return itemsRepository.findItemByItemName(itemName);
+    public Optional<ItemDTO> findItemByItemNameAndBreakfastId(String itemName, Long breakfastId) {
+        return itemsRepository.findItemByItemNameAndBreakfastId(itemName, breakfastId);
     }
 }
