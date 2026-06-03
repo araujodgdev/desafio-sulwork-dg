@@ -90,16 +90,15 @@ public class BreakfastRepository {
 		String sql = """
 				INSERT INTO breakfasts (breakfast_date, breakfast_time, location)
 				VALUES (:breakfastDate, :breakfastTime, :location)
-				RETURNING id
 				""";
 
 		Query query = entityManager.createNativeQuery(sql);
 		query.setParameter("breakfastDate", breakfastDate);
 		query.setParameter("breakfastTime", breakfastTime);
 		query.setParameter("location", location);
+		query.executeUpdate();
 
-		Number result = (Number) query.getSingleResult();
-
+		Number result = (Number) entityManager.createNativeQuery("SELECT MAX(id) FROM breakfasts").getSingleResult();
 		return result.longValue();
 	}
 

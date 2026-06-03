@@ -23,15 +23,15 @@ public class ItemsRepository {
         String sql = """
             INSERT INTO breakfast_items (breakfast_id, participation_id, item_name)
             VALUES (:breakfastId, :participationId, :name)
-            RETURNING id
         """;
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("breakfastId", breakfastId);
         query.setParameter("participationId", participationId);
         query.setParameter("name", normalizeItemName(name));
+        query.executeUpdate();
 
-        Number result = (Number) query.getSingleResult();
+        Number result = (Number) entityManager.createNativeQuery("SELECT MAX(id) FROM breakfast_items").getSingleResult();
         return result.longValue();
     }
 

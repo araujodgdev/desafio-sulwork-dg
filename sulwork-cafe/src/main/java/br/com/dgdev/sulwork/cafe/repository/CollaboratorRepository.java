@@ -28,14 +28,14 @@ public class CollaboratorRepository {
         String sql = """
             INSERT INTO collaborators (name, cpf)
             VALUES (:name, :cpf)
-            RETURNING id
         """;
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("name", name);
         query.setParameter("cpf", cpf);
+        query.executeUpdate();
 
-        Number result = (Number) query.getSingleResult();
+        Number result = (Number) entityManager.createNativeQuery("SELECT MAX(id) FROM collaborators").getSingleResult();
         return result.longValue();
     }
 

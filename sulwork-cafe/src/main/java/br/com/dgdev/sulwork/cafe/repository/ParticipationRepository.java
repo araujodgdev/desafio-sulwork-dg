@@ -37,14 +37,14 @@ public class ParticipationRepository {
 		String sql = """
 				INSERT INTO participations (breakfast_id, collaborator_id)
 				VALUES (:breakfastId, :collaboratorId)
-				RETURNING id
 				""";
 
 		Query query = entityManager.createNativeQuery(sql);
 		query.setParameter("breakfastId", breakfastId);
 		query.setParameter("collaboratorId", collaboratorId);
+		query.executeUpdate();
 
-		Number result = (Number) query.getSingleResult();
+		Number result = (Number) entityManager.createNativeQuery("SELECT MAX(id) FROM participations").getSingleResult();
 		return result.longValue();
 	}
 
