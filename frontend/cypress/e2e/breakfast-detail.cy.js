@@ -1,4 +1,4 @@
-const apiUrl = 'http://localhost:8080';
+const apiUrl = 'https://gracious-encouragement-production.up.railway.app';
 
 function todayDateValue() {
   const today = new Date();

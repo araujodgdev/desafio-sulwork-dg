@@ -1,4 +1,4 @@
-const apiUrl = 'http://localhost:8080';
+const apiUrl = 'https://gracious-encouragement-production.up.railway.app';
 
 describe('Agenda de cafés da manhã', () => {
   it('cria, edita e exclui um café da manhã', () => {

@@ -124,9 +124,13 @@
             class="secondary-action"
             type="button"
             (click)="loadBreakfast()"
-            [disabled]="isLoading()"
+            [disabled]="isLoading() || isRefreshing()"
           >
-            Atualizar
+            @if (isRefreshing()) {
+              Atualizando...
+            } @else {
+              Atualizar
+            }
           </button>
         </div>
 

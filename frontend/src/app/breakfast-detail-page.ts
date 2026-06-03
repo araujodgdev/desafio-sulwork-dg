@@ -31,6 +31,7 @@ export class BreakfastDetailPage implements OnInit {
   readonly breakfast = signal<Breakfast | null>(null);
   readonly selectedParticipationId = signal<number | null>(null);
   readonly isLoading = signal(true);
+  readonly isRefreshing = signal(false);
   readonly isSavingParticipation = signal(false);
   readonly isSavingItem = signal(false);
   readonly isDeletingBreakfast = signal(false);
@@ -94,14 +95,26 @@ export class BreakfastDetailPage implements OnInit {
     if (!Number.isFinite(this.breakfastId)) {
       this.errorMessage.set('Café da manhã inválido.');
       this.isLoading.set(false);
+      this.isRefreshing.set(false);
       return;
     }
 
-    this.isLoading.set(true);
+    const isInitialLoad = this.breakfast() === null;
+
+    if (isInitialLoad) {
+      this.isLoading.set(true);
+    } else {
+      this.isRefreshing.set(true);
+    }
 
     this.breakfastApi
       .getBreakfast(this.breakfastId)
-      .pipe(finalize(() => this.isLoading.set(false)))
+      .pipe(
+        finalize(() => {
+          this.isLoading.set(false);
+          this.isRefreshing.set(false);
+        }),
+      )
       .subscribe({
         next: (breakfast) => this.setBreakfast(breakfast),
         error: (error: unknown) => {

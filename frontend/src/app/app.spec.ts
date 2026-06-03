@@ -7,7 +7,7 @@ import { BreakfastDetailPage } from './breakfast-detail-page';
 import { BreakfastListPage } from './breakfast-list-page';
 import { Breakfast } from './breakfast.types';
 
-const apiBaseUrl = 'http://localhost:8080';
+const apiBaseUrl = 'https://gracious-encouragement-production.up.railway.app';
 
 const breakfastFixture: Breakfast = {
   id: 42,
@@ -321,6 +321,30 @@ describe('BreakfastDetailPage', () => {
 
     expect(compiled.textContent).toContain('Item cadastrado.');
     expect(compiled.textContent).toContain('Queijo');
+  });
+
+  it('should keep current details visible while refreshing after an item action', () => {
+    const fixture = createDetailComponentWithBreakfast(breakfastWithItem());
+    const page = fixture.componentInstance;
+
+    page.deleteItem(99);
+
+    const deleteRequest = httpMock.expectOne(`${apiBaseUrl}/items/99`);
+    expect(deleteRequest.request.method).toBe('DELETE');
+    deleteRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(page.isRefreshing()).toBe(true);
+    expect(compiled.textContent).toContain('10/06/2099');
+    expect(compiled.textContent).toContain('João');
+    expect(compiled.textContent).not.toContain('Carregando detalhes do café');
+
+    reloadRequest.flush(breakfastWithItem({ includeItem: false }));
+    fixture.detectChanges();
   });
 
   it('should update item status when breakfast is today', () => {
