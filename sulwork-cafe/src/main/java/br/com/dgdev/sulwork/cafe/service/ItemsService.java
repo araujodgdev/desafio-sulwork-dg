@@ -17,9 +17,6 @@ public class ItemsService {
     }
     
     public Long insertNewItem(String name, Long breakfastId, Long participationId) {
-        if (itemsRepository.findItemByName(name).isPresent()) {
-            throw new IllegalArgumentException("Item já cadastrado!");
-        }
         if (itemsRepository.itemExistsInBreakfast(breakfastId, name)) {
             throw new IllegalArgumentException("Item já cadastrado no café da manhã!");
         }

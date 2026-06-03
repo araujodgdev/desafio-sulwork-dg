@@ -33,24 +33,6 @@ public class ItemsRepository {
         return result.longValue();
     }
 
-
-    public Optional<ItemDTO> findItemByName(String name) {
-        String sql = """
-            SELECT id, breakfast_id, participation_id, item_name
-            FROM breakfast_items
-            WHERE item_name = :name
-        """;
-
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("name", name);
-
-        @SuppressWarnings("unchecked")
-        List<Object[]> results = query.getResultList();
-        return results.stream()
-            .findFirst()
-            .map(this::mapToItemDTO);
-    }
-
     public boolean itemExistsInBreakfast(Long breakfastId, String itemName) {
         String sql = """
             SELECT COUNT(*) FROM breakfast_items WHERE breakfast_id = :breakfastId AND item_name = :itemName
