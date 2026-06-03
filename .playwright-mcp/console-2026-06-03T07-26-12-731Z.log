@@ -1,0 +1,3 @@
+[     128ms] [LOG] Angular is running in development mode. @ http://127.0.0.1:4200/@fs/Users/webstar/Projects/learning/java/desafio-sulwork-dg/frontend/.angular/cache/21.2.13/frontend/vite/deps/chunk-YNS5GNE3.js?v=c794d464:14463
+[     196ms] [ERROR] Access to XMLHttpRequest at 'http://localhost:8080/breakfasts' from origin 'http://127.0.0.1:4200' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource. @ http://127.0.0.1:4200/:0
+[     196ms] [ERROR] Failed to load resource: net::ERR_FAILED @ http://localhost:8080/breakfasts:0

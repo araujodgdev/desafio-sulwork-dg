@@ -14,6 +14,8 @@ import br.com.dgdev.sulwork.cafe.dto.CreateBreakfastRequestDTO;
 import br.com.dgdev.sulwork.cafe.service.BreakfastService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
+
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
@@ -47,7 +49,7 @@ public class BreakfastController {
     @ApiResponse(responseCode = "201", description = "Café da manhã criado com sucesso")
     @ApiResponse(responseCode = "400", description = "Dados inválidos para criação do café da manhã")
     @ApiResponse(responseCode = "500", description = "Erro ao criar café da manhã")
-    public ResponseEntity<Long> createBreakfast(@RequestBody CreateBreakfastRequestDTO request) {
+    public ResponseEntity<Long> createBreakfast(@Valid @RequestBody CreateBreakfastRequestDTO request) {
         Long breakfastId = breakfastService.insertNewBreakfast(request.breakfastDate(), request.breakfastTime(), request.location());
         return ResponseEntity.status(HttpStatus.CREATED).body(breakfastId);
     }

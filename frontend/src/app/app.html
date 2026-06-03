@@ -1,0 +1,135 @@
+<main id="main-content" class="app-shell">
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">Sulwork Cafe</p>
+      <h1>Cafés da manhã</h1>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <section class="create-section" aria-labelledby="create-title">
+      <div class="section-heading">
+        <div>
+          <p class="section-kicker">Cadastro</p>
+          <h2 id="create-title">Novo café da manhã</h2>
+        </div>
+      </div>
+
+      <form class="breakfast-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field-grid">
+          <div class="field">
+            <label for="breakfastDate">Data</label>
+            <input
+              id="breakfastDate"
+              type="date"
+              formControlName="breakfastDate"
+              [attr.min]="minBreakfastDate"
+              [attr.aria-invalid]="hasFieldError('breakfastDate')"
+              aria-describedby="breakfastDate-error"
+            />
+            @if (hasFieldError('breakfastDate')) {
+              <p id="breakfastDate-error" class="field-error">{{ dateErrorMessage() }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="breakfastTime">Horário</label>
+            <input
+              id="breakfastTime"
+              type="time"
+              formControlName="breakfastTime"
+              [attr.aria-invalid]="hasFieldError('breakfastTime')"
+              aria-describedby="breakfastTime-error"
+            />
+            @if (hasFieldError('breakfastTime')) {
+              <p id="breakfastTime-error" class="field-error">Informe o horário.</p>
+            }
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="location">Local</label>
+          <input
+            id="location"
+            type="text"
+            formControlName="location"
+            maxlength="120"
+            autocomplete="off"
+            [attr.aria-invalid]="hasFieldError('location')"
+            aria-describedby="location-error"
+          />
+          @if (hasFieldError('location')) {
+            <p id="location-error" class="field-error">{{ locationErrorMessage() }}</p>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button class="primary-action" type="submit" [disabled]="form.invalid || isSaving()">
+            @if (isSaving()) {
+              Salvando...
+            } @else {
+              Criar café
+            }
+          </button>
+        </div>
+      </form>
+
+      @if (successMessage()) {
+        <p class="message message--success" aria-live="polite">{{ successMessage() }}</p>
+      }
+    </section>
+
+    <section class="list-section" aria-labelledby="list-title">
+      <div class="section-heading section-heading--row">
+        <div>
+          <p class="section-kicker">Agenda</p>
+          <h2 id="list-title">Cafés cadastrados</h2>
+        </div>
+
+        <button class="secondary-action" type="button" (click)="loadBreakfasts()" [disabled]="isLoadingList()">
+          Atualizar
+        </button>
+      </div>
+
+      @if (errorMessage()) {
+        <p class="message message--error" aria-live="assertive">{{ errorMessage() }}</p>
+      }
+
+      @if (isLoadingList()) {
+        <div class="skeleton-list" aria-label="Carregando cafés cadastrados">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      } @else if (sortedBreakfasts().length === 0) {
+        <div class="empty-state">
+          <p>Nenhum café cadastrado.</p>
+          <span>Crie o primeiro agendamento para iniciar a lista.</span>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Horário</th>
+                <th scope="col">Local</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (breakfast of sortedBreakfasts(); track breakfast.id) {
+                <tr>
+                  <td>
+                    <span class="date-cell">{{ formatDate(breakfast.breakfastDate) }}</span>
+                  </td>
+                  <td>{{ formatTime(breakfast.breakfastTime) }}</td>
+                  <td>{{ breakfast.location }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+</main>
