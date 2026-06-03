@@ -17,7 +17,7 @@ import {
 })
 export class BreakfastApiService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'http://localhost:8080';
+  private readonly baseUrl = 'https://gracious-encouragement-production.up.railway.app';
 
   listBreakfasts(): Observable<Breakfast[]> {
     return this.http.get<Breakfast[]>(`${this.baseUrl}/breakfasts`);
