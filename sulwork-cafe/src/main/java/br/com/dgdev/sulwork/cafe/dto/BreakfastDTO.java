@@ -1,8 +1,14 @@
 package br.com.dgdev.sulwork.cafe.dto;
 
-public record BreakfastDTO(
-		
-		
-		) {
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
+public record BreakfastDTO(
+		Long id,
+		LocalDate breakfastDate,
+		LocalTime breakfastTime,
+		String location,
+		LocalDateTime createdDateTime
+		) {
 }
