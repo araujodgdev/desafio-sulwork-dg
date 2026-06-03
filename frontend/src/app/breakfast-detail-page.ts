@@ -1,0 +1,208 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
+
+import { resolveHttpErrorMessage } from './api-error';
+import { BreakfastApiService } from './breakfast-api.service';
+import { formatDate, formatTime } from './breakfast-date';
+import { Breakfast } from './breakfast.types';
+import { cpfValidator, onlyCpfDigits } from './cpf.validator';
+
+@Component({
+  selector: 'app-breakfast-detail-page',
+  imports: [ReactiveFormsModule, RouterLink],
+  templateUrl: './breakfast-detail-page.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class BreakfastDetailPage implements OnInit {
+  private readonly breakfastApi = inject(BreakfastApiService);
+  private readonly formBuilder = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly breakfast = signal<Breakfast | null>(null);
+  readonly selectedParticipationId = signal<number | null>(null);
+  readonly isLoading = signal(true);
+  readonly isSavingParticipation = signal(false);
+  readonly isSavingItem = signal(false);
+  readonly errorMessage = signal<string | null>(null);
+  readonly successMessage = signal<string | null>(null);
+
+  readonly participationForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(120)]],
+    cpf: ['', [Validators.required, cpfValidator]],
+  });
+
+  readonly itemForm = this.formBuilder.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(120)]],
+  });
+
+  readonly participations = computed(() =>
+    [...(this.breakfast()?.participations ?? [])].sort((current, next) =>
+      current.collaborator.name.localeCompare(next.collaborator.name),
+    ),
+  );
+
+  readonly selectedParticipation = computed(() => {
+    const selectedId = this.selectedParticipationId();
+    return this.participations().find((participation) => participation.id === selectedId) ?? null;
+  });
+
+  private get breakfastId(): number {
+    return Number(this.route.snapshot.paramMap.get('id'));
+  }
+
+  ngOnInit(): void {
+    this.loadBreakfast();
+  }
+
+  loadBreakfast(): void {
+    if (!Number.isFinite(this.breakfastId)) {
+      this.errorMessage.set('Café da manhã inválido.');
+      this.isLoading.set(false);
+      return;
+    }
+
+    this.isLoading.set(true);
+
+    this.breakfastApi
+      .getBreakfast(this.breakfastId)
+      .pipe(finalize(() => this.isLoading.set(false)))
+      .subscribe({
+        next: (breakfast) => this.setBreakfast(breakfast),
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  createParticipation(): void {
+    if (this.participationForm.invalid) {
+      this.participationForm.markAllAsTouched();
+      return;
+    }
+
+    const formValue = this.participationForm.getRawValue();
+
+    this.isSavingParticipation.set(true);
+    this.clearMessages();
+
+    this.breakfastApi
+      .createParticipation({
+        breakfastId: this.breakfastId,
+        name: formValue.name.trim(),
+        cpf: onlyCpfDigits(formValue.cpf),
+      })
+      .pipe(finalize(() => this.isSavingParticipation.set(false)))
+      .subscribe({
+        next: (participationId) => {
+          this.successMessage.set('Participação cadastrada.');
+          this.selectedParticipationId.set(participationId);
+          this.participationForm.reset({ name: '', cpf: '' });
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  createItem(): void {
+    if (this.itemForm.invalid) {
+      this.itemForm.markAllAsTouched();
+      return;
+    }
+
+    const participationId = this.selectedParticipationId();
+
+    if (!participationId) {
+      this.errorMessage.set('Selecione uma participação.');
+      return;
+    }
+
+    this.isSavingItem.set(true);
+    this.clearMessages();
+
+    this.breakfastApi
+      .createItem(participationId, {
+        name: this.itemForm.controls.name.value.trim(),
+      })
+      .pipe(finalize(() => this.isSavingItem.set(false)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Item cadastrado.');
+          this.itemForm.reset({ name: '' });
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
+  selectParticipation(participationId: number): void {
+    this.selectedParticipationId.set(participationId);
+    this.errorMessage.set(null);
+  }
+
+  hasParticipationFieldError(controlName: 'name' | 'cpf'): boolean {
+    const control = this.participationForm.controls[controlName];
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  hasItemFieldError(): boolean {
+    const control = this.itemForm.controls.name;
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  cpfErrorMessage(): string {
+    const control = this.participationForm.controls.cpf;
+
+    if (control.hasError('required')) {
+      return 'Informe o CPF.';
+    }
+
+    if (control.hasError('cpf')) {
+      return 'Informe um CPF válido com 11 dígitos.';
+    }
+
+    return 'CPF inválido.';
+  }
+
+  formatDate(value: string): string {
+    return formatDate(value);
+  }
+
+  formatTime(value: string | null): string {
+    return formatTime(value);
+  }
+
+  private setBreakfast(breakfast: Breakfast): void {
+    this.breakfast.set({
+      ...breakfast,
+      participations: breakfast.participations ?? [],
+    });
+
+    const participations = breakfast.participations ?? [];
+    const selectedId = this.selectedParticipationId();
+    const selectedStillExists = participations.some(
+      (participation) => participation.id === selectedId,
+    );
+
+    if (!selectedStillExists) {
+      this.selectedParticipationId.set(participations[0]?.id ?? null);
+    }
+  }
+
+  private clearMessages(): void {
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+  }
+}

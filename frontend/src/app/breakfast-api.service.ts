@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { Breakfast, CreateBreakfastRequest } from './breakfast.types';
+import {
+  Breakfast,
+  CreateBreakfastRequest,
+  CreateItemRequest,
+  CreateParticipationRequest,
+} from './breakfast.types';
 
 @Injectable({
   providedIn: 'root',
@@ -15,7 +20,22 @@ export class BreakfastApiService {
     return this.http.get<Breakfast[]>(`${this.baseUrl}/breakfasts`);
   }
 
+  getBreakfast(id: number): Observable<Breakfast> {
+    return this.http.get<Breakfast>(`${this.baseUrl}/breakfasts/${id}`);
+  }
+
   createBreakfast(payload: CreateBreakfastRequest): Observable<number> {
     return this.http.post<number>(`${this.baseUrl}/breakfasts`, payload);
+  }
+
+  createParticipation(payload: CreateParticipationRequest): Observable<number> {
+    return this.http.post<number>(`${this.baseUrl}/participations`, payload);
+  }
+
+  createItem(participationId: number, payload: CreateItemRequest): Observable<number> {
+    return this.http.post<number>(
+      `${this.baseUrl}/participations/${participationId}/items`,
+      payload,
+    );
   }
 }

@@ -1,0 +1,218 @@
+<div class="detail-page">
+  <a class="text-link" routerLink="/">Voltar para a agenda</a>
+
+  @if (isLoading()) {
+    <div class="skeleton-list detail-skeleton" aria-label="Carregando detalhes do café">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  } @else if (breakfast(); as breakfast) {
+    <section class="detail-summary" aria-labelledby="detail-title">
+      <div>
+        <p class="section-kicker">Detalhes</p>
+        <h2 id="detail-title">{{ formatDate(breakfast.breakfastDate) }}</h2>
+      </div>
+
+      <div class="summary-strip" aria-label="Dados do café">
+        <div>
+          <span>Horário</span>
+          <strong>{{ formatTime(breakfast.breakfastTime) }}</strong>
+        </div>
+        <div>
+          <span>Local</span>
+          <strong>{{ breakfast.location }}</strong>
+        </div>
+        <div>
+          <span>Participantes</span>
+          <strong>{{ participations().length }}</strong>
+        </div>
+      </div>
+    </section>
+
+    @if (errorMessage()) {
+      <p class="message message--error" aria-live="assertive">{{ errorMessage() }}</p>
+    }
+
+    @if (successMessage()) {
+      <p class="message message--success" aria-live="polite">{{ successMessage() }}</p>
+    }
+
+    <div class="detail-grid">
+      <section class="create-section" aria-labelledby="participation-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Participação</p>
+            <h2 id="participation-title">Novo participante</h2>
+          </div>
+        </div>
+
+        <form
+          class="breakfast-form"
+          [formGroup]="participationForm"
+          (ngSubmit)="createParticipation()"
+          novalidate
+        >
+          <div class="field">
+            <label for="participantName">Nome</label>
+            <input
+              id="participantName"
+              type="text"
+              formControlName="name"
+              maxlength="120"
+              autocomplete="name"
+              [attr.aria-invalid]="hasParticipationFieldError('name')"
+              aria-describedby="participantName-error"
+            />
+            @if (hasParticipationFieldError('name')) {
+              <p id="participantName-error" class="field-error">Informe o nome do colaborador.</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="participantCpf">CPF</label>
+            <input
+              id="participantCpf"
+              type="text"
+              formControlName="cpf"
+              maxlength="11"
+              inputmode="numeric"
+              autocomplete="off"
+              [attr.aria-invalid]="hasParticipationFieldError('cpf')"
+              aria-describedby="participantCpf-error"
+            />
+            @if (hasParticipationFieldError('cpf')) {
+              <p id="participantCpf-error" class="field-error">{{ cpfErrorMessage() }}</p>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button
+              class="primary-action"
+              type="submit"
+              [disabled]="participationForm.invalid || isSavingParticipation()"
+            >
+              @if (isSavingParticipation()) {
+                Salvando...
+              } @else {
+                Cadastrar
+              }
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="detail-panel" aria-labelledby="participants-title">
+        <div class="section-heading section-heading--row">
+          <div>
+            <p class="section-kicker">Lista</p>
+            <h2 id="participants-title">Participantes</h2>
+          </div>
+
+          <button
+            class="secondary-action"
+            type="button"
+            (click)="loadBreakfast()"
+            [disabled]="isLoading()"
+          >
+            Atualizar
+          </button>
+        </div>
+
+        @if (participations().length === 0) {
+          <div class="empty-state empty-state--compact">
+            <p>Nenhum participante cadastrado.</p>
+            <span>Cadastre a primeira participação para inserir itens.</span>
+          </div>
+        } @else {
+          <div class="participants-list">
+            @for (participation of participations(); track participation.id) {
+              <button
+                class="participant-row"
+                [class.participant-row--selected]="participation.id === selectedParticipationId()"
+                type="button"
+                (click)="selectParticipation(participation.id)"
+              >
+                <span>
+                  <strong>{{ participation.collaborator.name }}</strong>
+                  <small>CPF {{ participation.collaborator.cpf }}</small>
+                </span>
+                <em>{{ participation.items.length }} itens</em>
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="detail-panel" aria-labelledby="items-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">Itens</p>
+            <h2 id="items-title">
+              @if (selectedParticipation(); as selectedParticipation) {
+                {{ selectedParticipation.collaborator.name }}
+              } @else {
+                Nenhuma participação
+              }
+            </h2>
+          </div>
+        </div>
+
+        <form
+          class="breakfast-form compact-form"
+          [formGroup]="itemForm"
+          (ngSubmit)="createItem()"
+          novalidate
+        >
+          <div class="field">
+            <label for="itemName">Item</label>
+            <input
+              id="itemName"
+              type="text"
+              formControlName="name"
+              maxlength="120"
+              autocomplete="off"
+              [attr.aria-invalid]="hasItemFieldError()"
+              aria-describedby="itemName-error"
+            />
+            @if (hasItemFieldError()) {
+              <p id="itemName-error" class="field-error">Informe o item do café.</p>
+            }
+          </div>
+
+          <div class="form-actions">
+            <button
+              class="primary-action"
+              type="submit"
+              [disabled]="itemForm.invalid || !selectedParticipation() || isSavingItem()"
+            >
+              @if (isSavingItem()) {
+                Salvando...
+              } @else {
+                Adicionar item
+              }
+            </button>
+          </div>
+        </form>
+
+        @if (selectedParticipation(); as selectedParticipation) {
+          @if (selectedParticipation.items.length === 0) {
+            <p class="muted-line">Nenhum item cadastrado para esta participação.</p>
+          } @else {
+            <ul class="item-list">
+              @for (item of selectedParticipation.items; track item.id) {
+                <li>{{ item.name }}</li>
+              }
+            </ul>
+          }
+        } @else {
+          <p class="muted-line">Cadastre ou selecione uma participação.</p>
+        }
+      </section>
+    </div>
+  } @else {
+    <p class="message message--error" aria-live="assertive">
+      {{ errorMessage() ?? 'Não foi possível carregar o café da manhã.' }}
+    </p>
+  }
+</div>
