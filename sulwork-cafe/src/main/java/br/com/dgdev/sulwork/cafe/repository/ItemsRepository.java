@@ -7,9 +7,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Repository;
 
 import br.com.dgdev.sulwork.cafe.dto.ItemDTO;
+import br.com.dgdev.sulwork.cafe.enums.ItemStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
+import java.time.LocalDate;
 
 @Repository
 public class ItemsRepository {
@@ -65,7 +67,7 @@ public class ItemsRepository {
 
     public Optional<ItemDTO> findItemByItemNameAndBreakfastId(String itemName, Long breakfastId) {
         String sql = """
-            SELECT id, breakfast_id, participation_id, item_name
+            SELECT id, breakfast_id, participation_id, item_name, item_status
             FROM breakfast_items
             WHERE breakfast_id = :breakfastId
               AND LOWER(TRIM(item_name)) = LOWER(TRIM(:itemName))
@@ -82,6 +84,52 @@ public class ItemsRepository {
             .map(this::mapToItemDTO);
     }
 
+    public Optional<ItemDTO> findItemById(Long itemId) {
+        String sql = """
+            SELECT id, breakfast_id, participation_id, item_name, item_status
+            FROM breakfast_items
+            WHERE id = :itemId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("itemId", itemId);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> results = query.getResultList();
+        return results.stream()
+            .findFirst()
+            .map(this::mapToItemDTO);
+    }
+
+    public Optional<LocalDate> findBreakfastDateByItemId(Long itemId) {
+        String sql = """
+            SELECT b.breakfast_date
+            FROM breakfast_items bi
+            INNER JOIN breakfasts b ON bi.breakfast_id = b.id
+            WHERE bi.id = :itemId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("itemId", itemId);
+
+        @SuppressWarnings("unchecked")
+        List<LocalDate> results = query.getResultList();
+        return results.stream().findFirst();
+    }
+
+    public void updateItemStatus(Long itemId, ItemStatus status) {
+        String sql = """
+            UPDATE breakfast_items
+            SET item_status = :status
+            WHERE id = :itemId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("itemId", itemId);
+        query.setParameter("status", status.name());
+        query.executeUpdate();
+    }
+
     private static String normalizeItemName(String itemName) {
         return itemName.trim();
     }
@@ -91,13 +139,14 @@ public class ItemsRepository {
             ((Number) row[0]).longValue(),
             ((Number) row[1]).longValue(),
             ((Number) row[2]).longValue(),
-            (String) row[3]
+            (String) row[3],
+            ItemStatus.valueOf((String) row[4])
         );
     }
 
     public List<ItemDTO> findItemsByParticipationId(Long participationId) {
         String sql = """
-            SELECT id, breakfast_id, participation_id, item_name
+            SELECT id, breakfast_id, participation_id, item_name, item_status
             FROM breakfast_items
             WHERE participation_id = :participationId
             ORDER BY id
@@ -115,7 +164,7 @@ public class ItemsRepository {
 
     public List<ItemDTO> findItemsByBreakfastId(Long breakfastId) {
         String sql = """
-            SELECT id, breakfast_id, participation_id, item_name
+            SELECT id, breakfast_id, participation_id, item_name, item_status
             FROM breakfast_items
             WHERE breakfast_id = :breakfastId
             ORDER BY participation_id, id

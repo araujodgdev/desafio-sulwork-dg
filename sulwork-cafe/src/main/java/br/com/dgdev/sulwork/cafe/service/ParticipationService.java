@@ -39,6 +39,7 @@ public class ParticipationService {
 		return participationId;
 	}
 
+	@Transactional
 	public Long insertNewItem(String itemName, Long participationId) {
 		ParticipationDTO participation = participationRepository.findParticipationByParticipationId(participationId)
 			.orElseThrow(() -> new ResourceNotFoundException("Participação não encontrada!"));

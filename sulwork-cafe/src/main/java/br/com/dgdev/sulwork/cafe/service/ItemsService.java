@@ -1,11 +1,15 @@
 package br.com.dgdev.sulwork.cafe.service;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
 import br.com.dgdev.sulwork.cafe.dto.ItemDTO;
+import br.com.dgdev.sulwork.cafe.enums.ItemStatus;
+import br.com.dgdev.sulwork.cafe.exception.ResourceNotFoundException;
 import br.com.dgdev.sulwork.cafe.repository.ItemsRepository;
+import jakarta.transaction.Transactional;
 
 @Service
 public class ItemsService {
@@ -16,6 +20,7 @@ public class ItemsService {
         this.itemsRepository = itemsRepository;
     }
     
+    @Transactional
     public Long insertNewItem(String name, Long breakfastId, Long participationId) {
         if (itemsRepository.itemExistsInBreakfast(breakfastId, name)) {
             throw new IllegalArgumentException("Item já cadastrado no café da manhã!");
@@ -28,5 +33,24 @@ public class ItemsService {
 
     public Optional<ItemDTO> findItemByItemNameAndBreakfastId(String itemName, Long breakfastId) {
         return itemsRepository.findItemByItemNameAndBreakfastId(itemName, breakfastId);
+    }
+
+    @Transactional
+    public void updateItemStatus(Long itemId, ItemStatus status) {
+        if (status == ItemStatus.PENDENTE) {
+            throw new IllegalArgumentException("Status deve ser TROUXE ou NAO_TROUXE.");
+        }
+
+        ItemDTO item = itemsRepository.findItemById(itemId)
+            .orElseThrow(() -> new ResourceNotFoundException("Item não encontrado!"));
+
+        LocalDate breakfastDate = itemsRepository.findBreakfastDateByItemId(item.id())
+            .orElseThrow(() -> new ResourceNotFoundException("Café da manhã do item não encontrado!"));
+
+        if (!breakfastDate.equals(LocalDate.now())) {
+            throw new IllegalArgumentException("Status do item só pode ser atualizado no dia do café.");
+        }
+
+        itemsRepository.updateItemStatus(item.id(), status);
     }
 }

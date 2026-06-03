@@ -5,11 +5,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.sql.Date;
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +27,9 @@ class SulworkCafeApplicationTests {
 
 	@Autowired
 	private MockMvc mockMvc;
+
+	@Autowired
+	private JdbcTemplate jdbcTemplate;
 
 	@Test
 	void contextLoads() {
@@ -77,6 +87,92 @@ class SulworkCafeApplicationTests {
 						"""))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.message").value("Participação não encontrada!"));
+	}
+
+	@Test
+	void updatesItemStatusOnBreakfastDate() throws Exception {
+		TestItemData data = createItemData(LocalDate.now(), "Suco");
+
+		mockMvc.perform(patch("/items/" + data.itemId() + "/status")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"status": "TROUXE"
+						}
+						"""))
+			.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/breakfasts/" + data.breakfastId()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.participations[0].items[0].status").value("TROUXE"));
+	}
+
+	@Test
+	void blocksItemStatusUpdateOutsideBreakfastDate() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(20), "Bolo");
+
+		mockMvc.perform(patch("/items/" + data.itemId() + "/status")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"status": "NAO_TROUXE"
+						}
+						"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("Status do item só pode ser atualizado no dia do café."));
+	}
+
+	@Test
+	void blocksPendingStatusUpdate() throws Exception {
+		TestItemData data = createItemData(LocalDate.now().plusDays(21), "Cuscuz");
+
+		mockMvc.perform(patch("/items/" + data.itemId() + "/status")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"status": "PENDENTE"
+						}
+						"""))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.message").value("Status deve ser TROUXE ou NAO_TROUXE."));
+	}
+
+	private TestItemData createItemData(LocalDate breakfastDate, String itemName) {
+		String suffix = String.valueOf(System.nanoTime());
+		jdbcTemplate.update(
+			"INSERT INTO breakfasts (breakfast_date, breakfast_time, location) VALUES (?, ?, ?)",
+			Date.valueOf(breakfastDate),
+			Time.valueOf(LocalTime.of(8, 30)),
+			"Sala " + suffix
+		);
+		Long breakfastId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM breakfasts", Long.class);
+
+		jdbcTemplate.update(
+			"INSERT INTO collaborators (name, cpf) VALUES (?, ?)",
+			"Colaborador " + suffix,
+			suffix.substring(Math.max(0, suffix.length() - 11))
+		);
+		Long collaboratorId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM collaborators", Long.class);
+
+		jdbcTemplate.update(
+			"INSERT INTO participations (breakfast_id, collaborator_id) VALUES (?, ?)",
+			breakfastId,
+			collaboratorId
+		);
+		Long participationId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM participations", Long.class);
+
+		jdbcTemplate.update(
+			"INSERT INTO breakfast_items (breakfast_id, participation_id, item_name) VALUES (?, ?, ?)",
+			breakfastId,
+			participationId,
+			itemName + " " + suffix
+		);
+		Long itemId = jdbcTemplate.queryForObject("SELECT MAX(id) FROM breakfast_items", Long.class);
+
+		return new TestItemData(breakfastId, itemId);
+	}
+
+	private record TestItemData(Long breakfastId, Long itemId) {
 	}
 
 }
