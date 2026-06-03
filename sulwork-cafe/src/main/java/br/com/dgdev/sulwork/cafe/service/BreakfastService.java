@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
+import br.com.dgdev.sulwork.cafe.exception.ResourceNotFoundException;
 import br.com.dgdev.sulwork.cafe.repository.BreakfastRepository;
 import br.com.dgdev.sulwork.cafe.repository.ParticipationRepository;
 
@@ -37,7 +38,7 @@ public class BreakfastService {
 	public BreakfastDTO findBreakfastById(Long id) {
 		var participations = participationRepository.findParticipationsByBreakfastId(id);
 		return breakfastRepository.findBreakfastById(id, participations)
-			.orElseThrow(() -> new IllegalArgumentException("Café da manhã não encontrado!"));
+			.orElseThrow(() -> new ResourceNotFoundException("Café da manhã não encontrado!"));
 	}
 
 	public Long insertNewBreakfast(LocalDate breakfastDate, LocalTime breakfastTime, String location) {
@@ -45,6 +46,6 @@ public class BreakfastService {
 		if (existingBreakfast.isPresent()) {
 			throw new IllegalArgumentException("Café da manhã já existe para a data informada!");
 		}
-		return breakfastRepository.insertNewBreakfast(breakfastDate, breakfastTime, location);
+		return breakfastRepository.insertNewBreakfast(breakfastDate, breakfastTime, location.trim());
 	}
 }

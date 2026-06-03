@@ -47,6 +47,7 @@ public class CollaboratorRepository {
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("cpf", cpf);
 
+        @SuppressWarnings("unchecked")
         List<Object[]> results = query.getResultList();
         return results.stream()
             .findFirst()
@@ -55,7 +56,7 @@ public class CollaboratorRepository {
 
     private CollaboratorDTO mapToCollaboratorDTO(Object[] result) {
         return new CollaboratorDTO(
-            (Long) result[0],
+            ((Number) result[0]).longValue(),
             (String) result[1],
             (String) result[2]
         );

@@ -4,6 +4,7 @@ import org.hibernate.validator.constraints.br.CPF;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateParticipationDTO(
@@ -16,6 +17,7 @@ public record CreateParticipationDTO(
     String name,
 
     @NotNull(message = "CPF do colaborador é obrigatório.")
+    @Pattern(regexp = "\\d{11}", message = "CPF deve conter exatamente 11 números.")
     @CPF(message = "CPF inválido.")
     String cpf
 ) {

@@ -17,10 +17,14 @@ public class CollaboratorService {
     }
 
     public Optional<CollaboratorDTO> findCollaboratorByCpf(String cpf) {
-        return collaboratorRepository.findCollaboratorByCpf(cpf);
+        return collaboratorRepository.findCollaboratorByCpf(normalizeCpf(cpf));
     }
 
     public Long findOrCreateCollaborator(String name, String cpf) {
-        return collaboratorRepository.findOrCreateCollaborator(name, cpf);
+        return collaboratorRepository.findOrCreateCollaborator(name.trim(), normalizeCpf(cpf));
+    }
+
+    private String normalizeCpf(String cpf) {
+        return cpf.replaceAll("\\D", "");
     }
 }

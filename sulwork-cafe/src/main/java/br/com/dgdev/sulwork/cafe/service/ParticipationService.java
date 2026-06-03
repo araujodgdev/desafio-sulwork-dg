@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import br.com.dgdev.sulwork.cafe.dto.ItemDTO;
 import br.com.dgdev.sulwork.cafe.dto.ParticipationDTO;
+import br.com.dgdev.sulwork.cafe.exception.ResourceNotFoundException;
 import br.com.dgdev.sulwork.cafe.repository.ParticipationRepository;
 import jakarta.transaction.Transactional;
 
@@ -39,11 +40,14 @@ public class ParticipationService {
 	}
 
 	public Long insertNewItem(String itemName, Long participationId) {
-		Optional<ItemDTO> existingItem = itemsService.findItemByItemNameAndBreakfastId(itemName, participationRepository.findParticipationByParticipationId(participationId).get().breakfastId());
+		ParticipationDTO participation = participationRepository.findParticipationByParticipationId(participationId)
+			.orElseThrow(() -> new ResourceNotFoundException("Participação não encontrada!"));
+
+		Optional<ItemDTO> existingItem = itemsService.findItemByItemNameAndBreakfastId(itemName, participation.breakfastId());
 		if (existingItem.isPresent()) {
 			throw new IllegalArgumentException("Item já cadastrado!");
 		}
-		return itemsService.insertNewItem(itemName, participationRepository.findParticipationByParticipationId(participationId).get().breakfastId(), participationId);
+		return itemsService.insertNewItem(itemName, participation.breakfastId(), participationId);
 	}
 
 	public Optional<ParticipationDTO> findParticipationByBreakfastIdAndCollaboratorId(Long breakfastId, Long collaboratorId) {

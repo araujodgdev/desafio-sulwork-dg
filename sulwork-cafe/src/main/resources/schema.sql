@@ -61,4 +61,5 @@ CREATE TABLE IF NOT EXISTS breakfast_items (
 
 );
 
-DROP INDEX IF EXISTS uk_breakfast_items_breakfast_name;
+CREATE UNIQUE INDEX IF NOT EXISTS uk_breakfast_items_breakfast_name
+	ON breakfast_items (breakfast_id, item_name);

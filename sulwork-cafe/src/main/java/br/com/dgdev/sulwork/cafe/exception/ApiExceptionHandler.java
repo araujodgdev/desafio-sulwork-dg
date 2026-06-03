@@ -32,6 +32,13 @@ public class ApiExceptionHandler {
             .body(ApiErrorResponse.of(exception.getMessage(), HttpStatus.BAD_REQUEST.value()));
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleResourceNotFound(ResourceNotFoundException exception) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(ApiErrorResponse.of(exception.getMessage(), HttpStatus.NOT_FOUND.value()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception) {
         return ResponseEntity
