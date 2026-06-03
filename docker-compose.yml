@@ -3,13 +3,43 @@ services:
     image: postgres:16-alpine
     container_name: sulwork-cafe-db
     environment:
-       POSTGRES_USER: sulwork
-       POSTGRES_PASSWORD: sulwork
-       POSTGRES_DB: sulwork_cafe
+      POSTGRES_USER: sulwork
+      POSTGRES_PASSWORD: sulwork
+      POSTGRES_DB: sulwork_cafe
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sulwork -d sulwork_cafe"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./sulwork-cafe
+    container_name: sulwork-cafe-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/sulwork_cafe
+      SPRING_DATASOURCE_USERNAME: sulwork
+      SPRING_DATASOURCE_PASSWORD: sulwork
+      SPRING_SQL_INIT_MODE: always
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: sulwork-cafe-web
+    depends_on:
+      - backend
+    ports:
+      - "4200:80"
 
 volumes:
   postgres_data:
