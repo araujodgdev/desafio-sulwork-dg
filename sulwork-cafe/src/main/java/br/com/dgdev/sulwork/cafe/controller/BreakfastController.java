@@ -13,8 +13,8 @@ import br.com.dgdev.sulwork.cafe.dto.BreakfastDTO;
 import br.com.dgdev.sulwork.cafe.dto.CreateBreakfastRequestDTO;
 import br.com.dgdev.sulwork.cafe.service.BreakfastService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 public class BreakfastController {

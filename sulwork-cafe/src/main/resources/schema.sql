@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS breakfasts (
 	breakfast_date DATE NOT NULL UNIQUE,
 	breakfast_time TIME,
 	location VARCHAR(120),
-	created_at TIMESTAMP
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 	
 );
 

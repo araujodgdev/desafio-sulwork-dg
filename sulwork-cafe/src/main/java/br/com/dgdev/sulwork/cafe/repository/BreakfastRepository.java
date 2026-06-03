@@ -1,8 +1,8 @@
 package br.com.dgdev.sulwork.cafe.repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -86,7 +86,7 @@ public class BreakfastRepository {
 			(LocalDate) result[1],
 			(LocalTime) result[2],
 			(String) result[3],
-			((Timestamp) result[4]).toLocalDateTime()
+			(LocalDateTime) result[4]
 		);
 	}
 }
