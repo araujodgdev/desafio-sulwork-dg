@@ -16,9 +16,8 @@ public class CollaboratorService {
         this.collaboratorRepository = collaboratorRepository;
     }
 
-    public CollaboratorDTO findCollaboratorByCpf(String cpf) {
-        return collaboratorRepository.findCollaboratorByCpf(cpf)
-            .orElseThrow(() -> new IllegalArgumentException("Colaborador não encontrado!"));
+    public Optional<CollaboratorDTO> findCollaboratorByCpf(String cpf) {
+        return collaboratorRepository.findCollaboratorByCpf(cpf);
     }
 
     public Long insertNewCollaborator(String name, String cpf) {

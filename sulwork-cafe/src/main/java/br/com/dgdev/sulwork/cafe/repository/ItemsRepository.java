@@ -2,6 +2,7 @@ package br.com.dgdev.sulwork.cafe.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Repository;
 
@@ -94,5 +95,19 @@ public class ItemsRepository {
             (Long) result[2],
             (String) result[3]
         );
+    }
+
+    public List<ItemDTO> findItemsByParticipationId(Long participationId) {
+        String sql = """
+            SELECT * FROM breakfast_items WHERE participation_id = :participationId
+        """;
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("participationId", participationId);
+
+        List<Object[]> results = query.getResultList();
+        return results.stream()
+            .map(this::mapToItemDTO)
+            .collect(Collectors.toUnmodifiableList());
     }
 }

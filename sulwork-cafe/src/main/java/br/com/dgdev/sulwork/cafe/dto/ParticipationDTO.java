@@ -1,11 +1,12 @@
 package br.com.dgdev.sulwork.cafe.dto;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 public record ParticipationDTO(
     Long id,
     Long breakfastId,
-    Long collaboratorId
+    Long collaboratorId,
+    CollaboratorDTO collaborator
 ) {
     
 }

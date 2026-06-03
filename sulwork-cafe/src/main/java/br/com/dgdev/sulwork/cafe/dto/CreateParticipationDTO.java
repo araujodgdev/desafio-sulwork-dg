@@ -6,7 +6,10 @@ public record CreateParticipationDTO(
     @NotNull(message = "ID do café da manhã é obrigatório.")
     Long breakfastId,
 
-    @NotNull(message = "ID do colaborador é obrigatório.")
-    Long collaboratorId
+    @NotNull(message = "Nome do colaborador é obrigatório.")
+    String name,
+
+    @NotNull(message = "CPF do colaborador é obrigatório.")
+    String cpf
 ) {
 }

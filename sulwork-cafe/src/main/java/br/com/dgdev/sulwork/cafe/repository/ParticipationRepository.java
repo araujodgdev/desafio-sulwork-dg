@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import br.com.dgdev.sulwork.cafe.dto.CollaboratorDTO;
 import br.com.dgdev.sulwork.cafe.dto.ParticipationDTO;
 import br.com.dgdev.sulwork.cafe.enums.ItemStatus;
 import jakarta.persistence.EntityManager;
@@ -53,7 +54,8 @@ public class ParticipationRepository {
 		return new ParticipationDTO(
 			(Long) result[0],
 			(Long) result[1],
-			(Long) result[2]
+			(Long) result[2],
+			new CollaboratorDTO((Long) result[3], (String) result[4], (String) result[5])
 		);
 	}
 }
