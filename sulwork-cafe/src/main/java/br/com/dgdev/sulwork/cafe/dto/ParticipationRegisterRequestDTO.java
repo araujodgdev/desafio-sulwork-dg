@@ -3,6 +3,8 @@ package br.com.dgdev.sulwork.cafe.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.hibernate.validator.constraints.br.CPF;
+
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -18,6 +20,7 @@ public record ParticipationRegisterRequestDTO(
 		
 		@NotBlank(message = "CPF é obrigatório!")
 		@Pattern(regexp = "\\d{11}", message = "O CPF deve ter exatamente 11 números.")
+		@CPF(message = "CPF Inválido")
 		String cpf,
 		
 		@NotNull(message = "Data do café da manhã é obrigatória!")
