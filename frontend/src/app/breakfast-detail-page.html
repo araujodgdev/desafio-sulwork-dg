@@ -199,9 +199,41 @@
           @if (selectedParticipation.items.length === 0) {
             <p class="muted-line">Nenhum item cadastrado para esta participação.</p>
           } @else {
+            <p class="status-note">{{ statusNote() }}</p>
             <ul class="item-list">
               @for (item of selectedParticipation.items; track item.id) {
-                <li>{{ item.name }}</li>
+                <li class="item-row">
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <span
+                      class="status-badge"
+                      [class]="'status-badge status-badge--' + item.status.toLowerCase()"
+                    >
+                      {{ formatStatus(item.status) }}
+                    </span>
+                  </div>
+
+                  @if (breakfastStatusMode() === 'today') {
+                    <div class="item-actions" aria-label="Atualizar status do item">
+                      <button
+                        class="tiny-action"
+                        type="button"
+                        (click)="updateItemStatus(item.id, 'TROUXE')"
+                        [disabled]="updatingItemId() === item.id"
+                      >
+                        Trouxe
+                      </button>
+                      <button
+                        class="tiny-action"
+                        type="button"
+                        (click)="updateItemStatus(item.id, 'NAO_TROUXE')"
+                        [disabled]="updatingItemId() === item.id"
+                      >
+                        Não trouxe
+                      </button>
+                    </div>
+                  }
+                </li>
               }
             </ul>
           }

@@ -32,6 +32,7 @@ export interface BreakfastItem {
   breakfastId: number;
   participationId: number;
   name: string;
+  status: ItemStatus;
 }
 
 export interface CreateParticipationRequest {
@@ -42,4 +43,10 @@ export interface CreateParticipationRequest {
 
 export interface CreateItemRequest {
   name: string;
+}
+
+export type ItemStatus = 'PENDENTE' | 'TROUXE' | 'NAO_TROUXE';
+
+export interface UpdateItemStatusRequest {
+  status: ItemStatus;
 }

@@ -7,6 +7,7 @@ import {
   CreateBreakfastRequest,
   CreateItemRequest,
   CreateParticipationRequest,
+  ItemStatus,
 } from './breakfast.types';
 
 @Injectable({
@@ -37,5 +38,11 @@ export class BreakfastApiService {
       `${this.baseUrl}/participations/${participationId}/items`,
       payload,
     );
+  }
+
+  updateItemStatus(itemId: number, status: ItemStatus): Observable<void> {
+    return this.http.patch<void>(`${this.baseUrl}/items/${itemId}/status`, {
+      status,
+    });
   }
 }

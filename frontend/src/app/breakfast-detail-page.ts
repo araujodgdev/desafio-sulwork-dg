@@ -13,7 +13,7 @@ import { finalize } from 'rxjs';
 import { resolveHttpErrorMessage } from './api-error';
 import { BreakfastApiService } from './breakfast-api.service';
 import { formatDate, formatTime } from './breakfast-date';
-import { Breakfast } from './breakfast.types';
+import { Breakfast, ItemStatus } from './breakfast.types';
 import { cpfValidator, onlyCpfDigits } from './cpf.validator';
 
 @Component({
@@ -32,6 +32,7 @@ export class BreakfastDetailPage implements OnInit {
   readonly isLoading = signal(true);
   readonly isSavingParticipation = signal(false);
   readonly isSavingItem = signal(false);
+  readonly updatingItemId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
 
@@ -53,6 +54,22 @@ export class BreakfastDetailPage implements OnInit {
   readonly selectedParticipation = computed(() => {
     const selectedId = this.selectedParticipationId();
     return this.participations().find((participation) => participation.id === selectedId) ?? null;
+  });
+
+  readonly breakfastStatusMode = computed<'today' | 'future' | 'past' | 'unknown'>(() => {
+    const breakfast = this.breakfast();
+
+    if (!breakfast) {
+      return 'unknown';
+    }
+
+    const today = this.todayDateValue();
+
+    if (breakfast.breakfastDate === today) {
+      return 'today';
+    }
+
+    return breakfast.breakfastDate > today ? 'future' : 'past';
   });
 
   private get breakfastId(): number {
@@ -147,6 +164,29 @@ export class BreakfastDetailPage implements OnInit {
       });
   }
 
+  updateItemStatus(itemId: number, status: ItemStatus): void {
+    if (this.breakfastStatusMode() !== 'today') {
+      this.errorMessage.set('Status só pode ser atualizado no dia do café.');
+      return;
+    }
+
+    this.updatingItemId.set(itemId);
+    this.clearMessages();
+
+    this.breakfastApi
+      .updateItemStatus(itemId, status)
+      .pipe(finalize(() => this.updatingItemId.set(null)))
+      .subscribe({
+        next: () => {
+          this.successMessage.set('Status atualizado.');
+          this.loadBreakfast();
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(resolveHttpErrorMessage(error));
+        },
+      });
+  }
+
   selectParticipation(participationId: number): void {
     this.selectedParticipationId.set(participationId);
     this.errorMessage.set(null);
@@ -184,6 +224,34 @@ export class BreakfastDetailPage implements OnInit {
     return formatTime(value);
   }
 
+  formatStatus(status: ItemStatus): string {
+    const labels: Record<ItemStatus, string> = {
+      PENDENTE: 'Pendente',
+      TROUXE: 'Trouxe',
+      NAO_TROUXE: 'Não trouxe',
+    };
+
+    return labels[status];
+  }
+
+  statusNote(): string {
+    const mode = this.breakfastStatusMode();
+
+    if (mode === 'today') {
+      return 'Marcação liberada para o café de hoje.';
+    }
+
+    if (mode === 'future') {
+      return 'A marcação ficará disponível no dia do café.';
+    }
+
+    if (mode === 'past') {
+      return 'Café encerrado. Itens pendentes são marcados como não trouxe.';
+    }
+
+    return '';
+  }
+
   private setBreakfast(breakfast: Breakfast): void {
     this.breakfast.set({
       ...breakfast,
@@ -204,5 +272,14 @@ export class BreakfastDetailPage implements OnInit {
   private clearMessages(): void {
     this.errorMessage.set(null);
     this.successMessage.set(null);
+  }
+
+  private todayDateValue(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 }

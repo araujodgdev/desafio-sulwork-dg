@@ -248,6 +248,7 @@ describe('BreakfastDetailPage', () => {
               breakfastId: 42,
               participationId: 7,
               name: 'Queijo',
+              status: 'PENDENTE',
             },
           ],
         },
@@ -259,6 +260,77 @@ describe('BreakfastDetailPage', () => {
 
     expect(compiled.textContent).toContain('Item cadastrado.');
     expect(compiled.textContent).toContain('Queijo');
+  });
+
+  it('should update item status when breakfast is today', () => {
+    const today = todayDateValue();
+    const fixture = createDetailComponentWithBreakfast({
+      ...breakfastFixture,
+      breakfastDate: today,
+      participations: [
+        {
+          id: 7,
+          breakfastId: 42,
+          collaboratorId: 3,
+          collaborator: {
+            id: 3,
+            name: 'João',
+            cpf: '73244216013',
+          },
+          items: [
+            {
+              id: 99,
+              breakfastId: 42,
+              participationId: 7,
+              name: 'Queijo',
+              status: 'PENDENTE',
+            },
+          ],
+        },
+      ],
+    });
+    const page = fixture.componentInstance;
+
+    page.updateItemStatus(99, 'TROUXE');
+
+    const updateRequest = httpMock.expectOne(`${apiBaseUrl}/items/99/status`);
+    expect(updateRequest.request.method).toBe('PATCH');
+    expect(updateRequest.request.body).toEqual({ status: 'TROUXE' });
+    updateRequest.flush(null);
+
+    const reloadRequest = httpMock.expectOne(`${apiBaseUrl}/breakfasts/42`);
+    expect(reloadRequest.request.method).toBe('GET');
+    reloadRequest.flush({
+      ...breakfastFixture,
+      breakfastDate: today,
+      participations: [
+        {
+          id: 7,
+          breakfastId: 42,
+          collaboratorId: 3,
+          collaborator: {
+            id: 3,
+            name: 'João',
+            cpf: '73244216013',
+          },
+          items: [
+            {
+              id: 99,
+              breakfastId: 42,
+              participationId: 7,
+              name: 'Queijo',
+              status: 'TROUXE',
+            },
+          ],
+        },
+      ],
+    });
+
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Status atualizado.');
+    expect(compiled.textContent).toContain('Trouxe');
   });
 
   function createDetailComponentWithBreakfast(
@@ -273,5 +345,14 @@ describe('BreakfastDetailPage', () => {
 
     fixture.detectChanges();
     return fixture;
+  }
+
+  function todayDateValue(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 });
