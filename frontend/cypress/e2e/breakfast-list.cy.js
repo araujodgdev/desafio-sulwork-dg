@@ -84,6 +84,7 @@ describe('Agenda de cafés da manhã', () => {
 
     cy.contains('tr', 'Auditório').within(() => {
       cy.contains('button', 'Excluir').click();
+      cy.contains('button', 'Confirmar').click();
     });
 
     cy.wait('@deleteBreakfast');

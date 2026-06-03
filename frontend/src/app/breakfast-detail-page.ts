@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   OnInit,
   computed,
   inject,
@@ -14,7 +15,7 @@ import { resolveHttpErrorMessage } from './api-error';
 import { BreakfastApiService } from './breakfast-api.service';
 import { formatDate, formatTime } from './breakfast-date';
 import { Breakfast, ItemStatus } from './breakfast.types';
-import { cpfValidator, onlyCpfDigits } from './cpf.validator';
+import { cpfValidator, formatCpf, onlyCpfDigits } from './cpf.validator';
 
 @Component({
   selector: 'app-breakfast-detail-page',
@@ -22,7 +23,7 @@ import { cpfValidator, onlyCpfDigits } from './cpf.validator';
   templateUrl: './breakfast-detail-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BreakfastDetailPage implements OnInit {
+export class BreakfastDetailPage implements OnInit, OnDestroy {
   private readonly breakfastApi = inject(BreakfastApiService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
@@ -40,8 +41,12 @@ export class BreakfastDetailPage implements OnInit {
   readonly editingItemId = signal<number | null>(null);
   readonly isSavingItemEdit = signal(false);
   readonly updatingItemId = signal<number | null>(null);
+  readonly pendingBreakfastDelete = signal(false);
+  readonly pendingParticipationDeleteId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+
+  private successTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly participationForm = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(120)]],
@@ -91,7 +96,14 @@ export class BreakfastDetailPage implements OnInit {
     this.loadBreakfast();
   }
 
+  ngOnDestroy(): void {
+    this.clearSuccessTimer();
+  }
+
   loadBreakfast(): void {
+    this.pendingBreakfastDelete.set(false);
+    this.pendingParticipationDeleteId.set(null);
+
     if (!Number.isFinite(this.breakfastId)) {
       this.errorMessage.set('Café da manhã inválido.');
       this.isLoading.set(false);
@@ -143,7 +155,7 @@ export class BreakfastDetailPage implements OnInit {
       .pipe(finalize(() => this.isSavingParticipation.set(false)))
       .subscribe({
         next: (participationId) => {
-          this.successMessage.set('Participação cadastrada.');
+          this.showSuccess('Participação cadastrada.');
           this.selectedParticipationId.set(participationId);
           this.participationForm.reset({ name: '', cpf: '' });
           this.loadBreakfast();
@@ -177,7 +189,7 @@ export class BreakfastDetailPage implements OnInit {
       .pipe(finalize(() => this.isSavingItem.set(false)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Item cadastrado.');
+          this.showSuccess('Item cadastrado.');
           this.itemForm.reset({ name: '' });
           this.loadBreakfast();
         },
@@ -201,7 +213,7 @@ export class BreakfastDetailPage implements OnInit {
       .pipe(finalize(() => this.updatingItemId.set(null)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Status atualizado.');
+          this.showSuccess('Status atualizado.');
           this.loadBreakfast();
         },
         error: (error: unknown) => {
@@ -213,6 +225,15 @@ export class BreakfastDetailPage implements OnInit {
   selectParticipation(participationId: number): void {
     this.selectedParticipationId.set(participationId);
     this.errorMessage.set(null);
+  }
+
+  requestDeleteBreakfast(): void {
+    this.pendingBreakfastDelete.set(true);
+    this.errorMessage.set(null);
+  }
+
+  cancelDeleteBreakfast(): void {
+    this.pendingBreakfastDelete.set(false);
   }
 
   deleteBreakfast(): void {
@@ -238,6 +259,15 @@ export class BreakfastDetailPage implements OnInit {
       });
   }
 
+  requestDeleteParticipation(participationId: number): void {
+    this.pendingParticipationDeleteId.set(participationId);
+    this.errorMessage.set(null);
+  }
+
+  cancelDeleteParticipation(): void {
+    this.pendingParticipationDeleteId.set(null);
+  }
+
   deleteParticipation(participationId: number): void {
     this.deletingParticipationId.set(participationId);
     this.clearMessages();
@@ -247,7 +277,7 @@ export class BreakfastDetailPage implements OnInit {
       .pipe(finalize(() => this.deletingParticipationId.set(null)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Participação excluída.');
+          this.showSuccess('Participação excluída.');
           if (this.selectedParticipationId() === participationId) {
             this.selectedParticipationId.set(null);
           }
@@ -286,7 +316,7 @@ export class BreakfastDetailPage implements OnInit {
       .pipe(finalize(() => this.isSavingItemEdit.set(false)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Item atualizado.');
+          this.showSuccess('Item atualizado.');
           this.cancelEditItem();
           this.loadBreakfast();
         },
@@ -372,7 +402,10 @@ export class BreakfastDetailPage implements OnInit {
     }
 
     if (mode === 'future') {
-      return 'A marcação ficará disponível no dia do café.';
+      const label = this.markUnlockLabel();
+      return label
+        ? `A marcação ficará disponível em ${label}.`
+        : 'A marcação ficará disponível no dia do café.';
     }
 
     if (mode === 'past') {
@@ -380,6 +413,15 @@ export class BreakfastDetailPage implements OnInit {
     }
 
     return '';
+  }
+
+  markUnlockLabel(): string {
+    const breakfast = this.breakfast();
+    return breakfast ? formatDate(breakfast.breakfastDate).slice(0, 5) : '';
+  }
+
+  formatCpf(value: string): string {
+    return formatCpf(value);
   }
 
   private setBreakfast(breakfast: Breakfast): void {
@@ -402,6 +444,23 @@ export class BreakfastDetailPage implements OnInit {
   private clearMessages(): void {
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.clearSuccessTimer();
+  }
+
+  private showSuccess(message: string): void {
+    this.successMessage.set(message);
+    this.clearSuccessTimer();
+    this.successTimer = setTimeout(() => {
+      this.successMessage.set(null);
+      this.successTimer = null;
+    }, 4000);
+  }
+
+  private clearSuccessTimer(): void {
+    if (this.successTimer !== null) {
+      clearTimeout(this.successTimer);
+      this.successTimer = null;
+    }
   }
 
   private todayDateValue(): string {

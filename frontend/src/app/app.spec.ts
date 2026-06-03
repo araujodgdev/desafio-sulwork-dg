@@ -210,7 +210,7 @@ describe('BreakfastDetailPage', () => {
 
     expect(compiled.textContent).toContain('10/06/2099');
     expect(compiled.textContent).toContain('João');
-    expect(compiled.textContent).toContain('CPF 73244216013');
+    expect(compiled.textContent).toContain('CPF 732.442.160-13');
   });
 
   it('should create a participation and reload details', () => {

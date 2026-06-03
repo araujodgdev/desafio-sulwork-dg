@@ -204,6 +204,7 @@ describe('Detalhe do café da manhã', () => {
 
     cy.contains('.participant-row', 'Ana Recife').within(() => {
       cy.contains('button', 'Excluir').click();
+      cy.contains('button', 'Confirmar').click();
     });
 
     cy.wait('@deleteParticipation');

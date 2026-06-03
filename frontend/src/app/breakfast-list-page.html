@@ -104,7 +104,22 @@
       <p class="message message--error" aria-live="assertive">{{ errorMessage() }}</p>
     }
 
-    @if (isLoadingList()) {
+    @if (listError()) {
+      <div class="empty-state error-state" role="alert">
+        <p>Não foi possível carregar a agenda.</p>
+        <span>{{ listError() }}</span>
+        <div class="empty-state-actions">
+          <button
+            class="secondary-action"
+            type="button"
+            (click)="loadBreakfasts()"
+            [disabled]="isLoadingList()"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    } @else if (isLoadingList()) {
       <div class="skeleton-list" aria-label="Carregando cafés cadastrados">
         <span></span>
         <span></span>
@@ -142,21 +157,39 @@
                 </td>
                 <td>
                   <div class="table-actions">
-                    <button
-                      class="tiny-action"
-                      type="button"
-                      (click)="startEditBreakfast(breakfast)"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      class="tiny-action danger-action"
-                      type="button"
-                      (click)="deleteBreakfast(breakfast.id)"
-                      [disabled]="deletingBreakfastId() === breakfast.id"
-                    >
-                      Excluir
-                    </button>
+                    @if (pendingDeleteBreakfastId() === breakfast.id) {
+                      <button
+                        class="tiny-action"
+                        type="button"
+                        (click)="cancelDeleteBreakfast()"
+                        [disabled]="deletingBreakfastId() === breakfast.id"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        class="tiny-action danger-solid"
+                        type="button"
+                        (click)="deleteBreakfast(breakfast.id)"
+                        [disabled]="deletingBreakfastId() === breakfast.id"
+                      >
+                        Confirmar
+                      </button>
+                    } @else {
+                      <button
+                        class="tiny-action"
+                        type="button"
+                        (click)="startEditBreakfast(breakfast)"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        class="tiny-action danger-action"
+                        type="button"
+                        (click)="requestDeleteBreakfast(breakfast.id)"
+                      >
+                        Excluir
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>

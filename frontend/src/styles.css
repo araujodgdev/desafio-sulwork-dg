@@ -26,6 +26,7 @@
   --danger-text: oklch(40% 0.12 28);
   --danger-surface: oklch(94% 0.032 28);
   --danger-line: oklch(80% 0.07 28);
+  --danger-contrast: oklch(98% 0.01 28);
 }
 
 * {
@@ -58,4 +59,15 @@ body {
 button,
 input {
   font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

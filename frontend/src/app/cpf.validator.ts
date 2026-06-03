@@ -23,6 +23,16 @@ export function onlyCpfDigits(value: string): string {
   return value.replace(/\D/g, '');
 }
 
+export function formatCpf(value: string): string {
+  const digits = onlyCpfDigits(value ?? '');
+
+  if (digits.length !== 11) {
+    return value;
+  }
+
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
 function calculateCpfDigit(base: string, initialWeight: number): number {
   const total = base
     .split('')

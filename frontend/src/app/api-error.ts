@@ -6,7 +6,7 @@ export function resolveHttpErrorMessage(error: unknown): string {
   }
 
   if (error.status === 0) {
-    return 'Não foi possível conectar ao backend em localhost:8080.';
+    return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';
   }
 
   if (typeof error.error === 'string' && error.error.trim()) {

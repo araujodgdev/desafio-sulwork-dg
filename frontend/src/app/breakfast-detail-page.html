@@ -30,14 +30,39 @@
       </div>
 
       <div class="summary-actions">
-        <button
-          class="secondary-action danger-action"
-          type="button"
-          (click)="deleteBreakfast()"
-          [disabled]="isDeletingBreakfast()"
-        >
-          Excluir café
-        </button>
+        @if (pendingBreakfastDelete()) {
+          <div class="confirm-actions">
+            <span class="confirm-label">Excluir este café e todos os participantes?</span>
+            <button
+              class="secondary-action"
+              type="button"
+              (click)="cancelDeleteBreakfast()"
+              [disabled]="isDeletingBreakfast()"
+            >
+              Cancelar
+            </button>
+            <button
+              class="primary-action danger-solid"
+              type="button"
+              (click)="deleteBreakfast()"
+              [disabled]="isDeletingBreakfast()"
+            >
+              @if (isDeletingBreakfast()) {
+                Excluindo...
+              } @else {
+                Confirmar exclusão
+              }
+            </button>
+          </div>
+        } @else {
+          <button
+            class="secondary-action danger-action"
+            type="button"
+            (click)="requestDeleteBreakfast()"
+          >
+            Excluir café
+          </button>
+        }
       </div>
     </section>
 
@@ -50,6 +75,7 @@
     }
 
     <div class="detail-grid">
+      <div class="detail-people">
       <section class="create-section" aria-labelledby="participation-title">
         <div class="section-heading">
           <div>
@@ -153,26 +179,51 @@
                 >
                   <span>
                     <strong>{{ participation.collaborator.name }}</strong>
-                    <small>CPF {{ participation.collaborator.cpf }}</small>
+                    <small>CPF {{ formatCpf(participation.collaborator.cpf) }}</small>
                   </span>
                   <em>{{ participation.items.length }} itens</em>
                 </button>
 
-                <button
-                  class="tiny-action danger-action"
-                  type="button"
-                  (click)="deleteParticipation(participation.id)"
-                  [disabled]="deletingParticipationId() === participation.id"
-                >
-                  Excluir
-                </button>
+                @if (pendingParticipationDeleteId() === participation.id) {
+                  <div class="row-confirm">
+                    <button
+                      class="tiny-action"
+                      type="button"
+                      (click)="cancelDeleteParticipation()"
+                      [disabled]="deletingParticipationId() === participation.id"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      class="tiny-action danger-solid"
+                      type="button"
+                      (click)="deleteParticipation(participation.id)"
+                      [disabled]="deletingParticipationId() === participation.id"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                } @else {
+                  <button
+                    class="tiny-action danger-action"
+                    type="button"
+                    (click)="requestDeleteParticipation(participation.id)"
+                  >
+                    Excluir
+                  </button>
+                }
               </div>
             }
           </div>
         }
       </section>
+      </div>
 
-      <section class="detail-panel" aria-labelledby="items-title">
+      <section
+        class="detail-panel detail-items"
+        [class.detail-items--active]="selectedParticipation()"
+        aria-labelledby="items-title"
+      >
         <div class="section-heading">
           <div>
             <p class="section-kicker">Itens</p>
@@ -180,50 +231,50 @@
               @if (selectedParticipation(); as selectedParticipation) {
                 {{ selectedParticipation.collaborator.name }}
               } @else {
-                Nenhuma participação
+                Selecione um participante
               }
             </h2>
           </div>
         </div>
 
-        <form
-          class="breakfast-form compact-form"
-          [formGroup]="itemForm"
-          (ngSubmit)="createItem()"
-          novalidate
-        >
-          <div class="field">
-            <label for="itemName">Item</label>
-            <input
-              id="itemName"
-              type="text"
-              formControlName="name"
-              maxlength="120"
-              autocomplete="off"
-              [attr.aria-invalid]="hasItemFieldError()"
-              aria-describedby="itemName-error"
-            />
-            @if (hasItemFieldError()) {
-              <p id="itemName-error" class="field-error">Informe o item do café.</p>
-            }
-          </div>
-
-          <div class="form-actions">
-            <button
-              class="primary-action"
-              type="submit"
-              [disabled]="itemForm.invalid || !selectedParticipation() || isSavingItem()"
-            >
-              @if (isSavingItem()) {
-                Salvando...
-              } @else {
-                Adicionar item
-              }
-            </button>
-          </div>
-        </form>
-
         @if (selectedParticipation(); as selectedParticipation) {
+          <form
+            class="breakfast-form compact-form"
+            [formGroup]="itemForm"
+            (ngSubmit)="createItem()"
+            novalidate
+          >
+            <div class="field">
+              <label for="itemName">Item</label>
+              <input
+                id="itemName"
+                type="text"
+                formControlName="name"
+                maxlength="120"
+                autocomplete="off"
+                [attr.aria-invalid]="hasItemFieldError()"
+                aria-describedby="itemName-error"
+              />
+              @if (hasItemFieldError()) {
+                <p id="itemName-error" class="field-error">Informe o item do café.</p>
+              }
+            </div>
+
+            <div class="form-actions">
+              <button
+                class="primary-action"
+                type="submit"
+                [disabled]="itemForm.invalid || isSavingItem()"
+              >
+                @if (isSavingItem()) {
+                  Salvando...
+                } @else {
+                  Adicionar item
+                }
+              </button>
+            </div>
+          </form>
+
           @if (selectedParticipation.items.length === 0) {
             <p class="muted-line">Nenhum item cadastrado para esta participação.</p>
           } @else {
@@ -268,7 +319,8 @@
                       <strong>{{ item.name }}</strong>
                       <span
                         class="status-badge"
-                        [class]="'status-badge status-badge--' + item.status.toLowerCase()"
+                        [class.status-badge--trouxe]="item.status === 'TROUXE'"
+                        [class.status-badge--nao_trouxe]="item.status === 'NAO_TROUXE'"
                       >
                         {{ formatStatus(item.status) }}
                       </span>
@@ -276,38 +328,44 @@
 
                     <div class="item-actions" aria-label="Ações do item">
                       @if (breakfastStatusMode() === 'today') {
-                        <button
-                          class="tiny-action"
-                          type="button"
-                          (click)="updateItemStatus(item.id, 'TROUXE')"
-                          [disabled]="updatingItemId() === item.id"
-                        >
-                          Trouxe
-                        </button>
-                        <button
-                          class="tiny-action"
-                          type="button"
-                          (click)="updateItemStatus(item.id, 'NAO_TROUXE')"
-                          [disabled]="updatingItemId() === item.id"
-                        >
-                          Não trouxe
-                        </button>
+                        <div class="item-actions__status">
+                          <button
+                            class="tiny-action"
+                            type="button"
+                            (click)="updateItemStatus(item.id, 'TROUXE')"
+                            [disabled]="updatingItemId() === item.id"
+                          >
+                            Trouxe
+                          </button>
+                          <button
+                            class="tiny-action"
+                            type="button"
+                            (click)="updateItemStatus(item.id, 'NAO_TROUXE')"
+                            [disabled]="updatingItemId() === item.id"
+                          >
+                            Não trouxe
+                          </button>
+                        </div>
+                      } @else if (breakfastStatusMode() === 'future') {
+                        <span class="status-hint">Marcação em {{ markUnlockLabel() }}</span>
                       }
-                      <button
-                        class="tiny-action"
-                        type="button"
-                        (click)="startEditItem(item.id, item.name)"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        class="tiny-action danger-action"
-                        type="button"
-                        (click)="deleteItem(item.id)"
-                        [disabled]="deletingItemId() === item.id"
-                      >
-                        Excluir
-                      </button>
+                      <div class="item-actions__manage">
+                        <button
+                          class="tiny-action"
+                          type="button"
+                          (click)="startEditItem(item.id, item.name)"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          class="tiny-action danger-action"
+                          type="button"
+                          (click)="deleteItem(item.id)"
+                          [disabled]="deletingItemId() === item.id"
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </div>
                   }
                 </li>
@@ -315,13 +373,29 @@
             </ul>
           }
         } @else {
-          <p class="muted-line">Cadastre ou selecione uma participação.</p>
+          <div class="empty-state empty-state--compact items-placeholder">
+            <p>Selecione um participante</p>
+            <span>Escolha alguém na lista ao lado para ver e adicionar itens.</span>
+          </div>
         }
       </section>
     </div>
   } @else {
-    <p class="message message--error" aria-live="assertive">
-      {{ errorMessage() ?? 'Não foi possível carregar o café da manhã.' }}
-    </p>
+    <div class="empty-state error-state" role="alert">
+      <p>Não foi possível carregar o café da manhã.</p>
+      @if (errorMessage()) {
+        <span>{{ errorMessage() }}</span>
+      }
+      <div class="empty-state-actions">
+        <button
+          class="secondary-action"
+          type="button"
+          (click)="loadBreakfast()"
+          [disabled]="isLoading()"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    </div>
   }
 </div>

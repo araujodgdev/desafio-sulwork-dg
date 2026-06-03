@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnDestroy,
   OnInit,
   computed,
   inject,
@@ -21,7 +22,7 @@ import { Breakfast, CreateBreakfastRequest } from './breakfast.types';
   templateUrl: './breakfast-list-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BreakfastListPage implements OnInit {
+export class BreakfastListPage implements OnInit, OnDestroy {
   private readonly breakfastApi = inject(BreakfastApiService);
   private readonly formBuilder = inject(FormBuilder);
 
@@ -30,9 +31,13 @@ export class BreakfastListPage implements OnInit {
   readonly isSaving = signal(false);
   readonly deletingBreakfastId = signal<number | null>(null);
   readonly editingBreakfastId = signal<number | null>(null);
+  readonly pendingDeleteBreakfastId = signal<number | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly listError = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
   readonly minBreakfastDate = getTomorrowDate();
+
+  private successTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly form = this.formBuilder.nonNullable.group({
     breakfastDate: ['', [Validators.required, futureDateValidator]],
@@ -50,8 +55,14 @@ export class BreakfastListPage implements OnInit {
     this.loadBreakfasts();
   }
 
+  ngOnDestroy(): void {
+    this.clearSuccessTimer();
+  }
+
   loadBreakfasts(): void {
     this.isLoadingList.set(true);
+    this.listError.set(null);
+    this.pendingDeleteBreakfastId.set(null);
 
     this.breakfastApi
       .listBreakfasts()
@@ -61,7 +72,7 @@ export class BreakfastListPage implements OnInit {
           this.breakfasts.set(breakfasts);
         },
         error: (error: unknown) => {
-          this.errorMessage.set(resolveHttpErrorMessage(error));
+          this.listError.set(resolveHttpErrorMessage(error));
         },
       });
   }
@@ -85,7 +96,7 @@ export class BreakfastListPage implements OnInit {
 
     request$.pipe(finalize(() => this.isSaving.set(false))).subscribe({
       next: (breakfastId) => {
-        this.successMessage.set(
+        this.showSuccess(
           editingId ? 'Café da manhã atualizado.' : `Café da manhã #${breakfastId} criado.`,
         );
         this.resetForm();
@@ -99,6 +110,7 @@ export class BreakfastListPage implements OnInit {
 
   startEditBreakfast(breakfast: Breakfast): void {
     this.editingBreakfastId.set(breakfast.id);
+    this.pendingDeleteBreakfastId.set(null);
     this.successMessage.set(null);
     this.errorMessage.set(null);
     this.form.setValue({
@@ -112,17 +124,26 @@ export class BreakfastListPage implements OnInit {
     this.resetForm();
   }
 
+  requestDeleteBreakfast(id: number): void {
+    this.pendingDeleteBreakfastId.set(id);
+    this.errorMessage.set(null);
+  }
+
+  cancelDeleteBreakfast(): void {
+    this.pendingDeleteBreakfastId.set(null);
+  }
+
   deleteBreakfast(id: number): void {
     this.deletingBreakfastId.set(id);
     this.errorMessage.set(null);
-    this.successMessage.set(null);
+    this.clearSuccess();
 
     this.breakfastApi
       .deleteBreakfast(id)
       .pipe(finalize(() => this.deletingBreakfastId.set(null)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Café da manhã excluído.');
+          this.showSuccess('Café da manhã excluído.');
           if (this.editingBreakfastId() === id) {
             this.resetForm();
           }
@@ -194,5 +215,26 @@ export class BreakfastListPage implements OnInit {
 
   private formatTimeForInput(value: string | null): string {
     return value ? value.slice(0, 5) : '08:30';
+  }
+
+  private showSuccess(message: string): void {
+    this.successMessage.set(message);
+    this.clearSuccessTimer();
+    this.successTimer = setTimeout(() => {
+      this.successMessage.set(null);
+      this.successTimer = null;
+    }, 4000);
+  }
+
+  private clearSuccess(): void {
+    this.successMessage.set(null);
+    this.clearSuccessTimer();
+  }
+
+  private clearSuccessTimer(): void {
+    if (this.successTimer !== null) {
+      clearTimeout(this.successTimer);
+      this.successTimer = null;
+    }
   }
 }
